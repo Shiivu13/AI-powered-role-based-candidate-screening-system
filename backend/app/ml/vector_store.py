@@ -20,16 +20,21 @@ def _get_embedder():
     global _embedder
     if _embedder is None:
         try:
-            from chromadb.utils import embedding_functions
-            ef = embedding_functions.DefaultEmbeddingFunction()  # ONNX MiniLM-L6-v2
-            ef(["warmup"])  # force model load so a failure surfaces here
+            from fastembed import TextEmbedding
+            # Cache in a project-relative dir so the model baked in at build time
+            # is reused at runtime (no slow/flaky download on first request).
+            model = TextEmbedding(
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
+                cache_dir="fastembed_cache",
+            )
 
             def encode(texts: list[str]) -> list[list[float]]:
-                return [list(v) for v in ef(list(texts))]
+                return [list(map(float, v)) for v in model.embed(list(texts))]
 
+            encode(["warmup"])  # force model download/load so failures surface here
             _embedder = encode
         except Exception as onnx_err:
-            print(f"[embedder] ONNX unavailable ({onnx_err}); falling back to torch MiniLM")
+            print(f"[embedder] fastembed unavailable ({onnx_err}); falling back to torch MiniLM", flush=True)
             _embedder = _torch_embedder()
     return _embedder
 
