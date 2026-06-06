@@ -1,0 +1,73 @@
+Chapter: Data Preprocessing, Feature Engineering, and Exploratory Data Analysis
+
+DATA PREPROCESSING
+Real-world data is messy — it contains missing values, outliers, inconsistencies, and irrelevant features. Data preprocessing transforms raw data into a clean, analysis-ready form. Quality of data preprocessing directly impacts model performance.
+
+MISSING VALUES
+Types of missingness:
+- MCAR (Missing Completely At Random): no relationship between missingness and data values
+- MAR (Missing At Random): missingness depends on observed variables
+- MNAR (Missing Not At Random): missingness depends on unobserved values
+
+Strategies:
+- Deletion: listwise (drop rows with any missing), pairwise — only valid if MCAR
+- Mean/median/mode imputation: simple, doesn't preserve variance
+- Regression imputation: predict missing values from other features
+- Multiple imputation: create multiple imputed datasets, combine results (gold standard)
+- KNN imputation: use nearest neighbors to impute
+- Indicator variables: add binary column indicating whether value was missing (preserves missingness pattern)
+
+FEATURE SCALING
+Many algorithms are sensitive to feature scales:
+- Standardization (Z-score): x' = (x - μ)/σ → mean 0, std 1. Best for algorithms assuming normal distribution (SVMs, linear regression, neural networks, PCA)
+- Min-max normalization: x' = (x - min)/(max - min) → [0,1]. Preserves zero entries (useful for sparse data), sensitive to outliers
+- Robust scaling: x' = (x - median)/IQR. Robust to outliers
+- Log transformation: reduces right-skewness, compresses large values
+
+Always fit scaler on training data only, then apply to validation and test to prevent data leakage.
+
+OUTLIER DETECTION AND HANDLING
+- Statistical: Z-score > 3, IQR method (below Q1-1.5*IQR or above Q3+1.5*IQR)
+- Visual: boxplots, scatter plots
+- Algorithmic: Isolation Forest, LOF
+Actions: remove, cap/floor (winsorization), transform, keep (if valid)
+
+CATEGORICAL ENCODING
+- Label encoding: assign integer 0,1,...,k-1 (implies ordinal relationship, appropriate for ordinal features)
+- One-hot encoding: binary column per category (appropriate for nominal features, can cause dimensionality explosion)
+- Target encoding (mean encoding): replace category with mean of target (risk of data leakage — use cross-validation encoding)
+- Embeddings: learned dense representations for high-cardinality categories (neural networks)
+
+FEATURE ENGINEERING
+Creating new features from existing ones to help models capture relationships:
+- Polynomial features: x², x³, x₁*x₂ — capture nonlinear relationships for linear models
+- Interaction terms: product of two features
+- Date/time decomposition: year, month, day, hour, day_of_week, is_weekend
+- Binning/quantization: convert continuous to ordinal/nominal
+- Aggregation: mean, sum, count, std within groups
+- Text features: TF-IDF, word count, character count, readability scores
+- Domain-specific features: price per square foot, revenue per user
+
+FEATURE SELECTION
+Remove irrelevant and redundant features to reduce dimensionality and overfitting:
+- Filter methods: correlation, chi-square test, mutual information — fast, model-agnostic
+- Wrapper methods: recursive feature elimination (RFE) — uses model performance, expensive
+- Embedded methods: Lasso (L1 regularization) zeros out irrelevant features, tree-based feature importance
+- Variance threshold: remove near-constant features
+
+EXPLORATORY DATA ANALYSIS (EDA)
+Understand data before modeling:
+- Univariate: distributions (histograms, KDE plots), summary statistics, outliers
+- Bivariate: correlations (heatmap, pairplot), target-feature relationships (boxplots, scatter)
+- Missing value analysis: heatmap of missingness
+- Class balance: bar charts of target distribution
+
+Pandas profiling and ydata-profiling automate EDA report generation.
+
+DATA LEAKAGE
+Critical error: information from the test set leaks into training. Causes:
+- Fitting scaler/imputer on full dataset before splitting
+- Using future information as features in time series
+- Target leakage: features that are proxies of the target
+
+Prevention: always split first, then preprocess using training statistics only. Use pipelines (sklearn Pipeline) to encapsulate preprocessing + model.

@@ -1,0 +1,76 @@
+Chapter: System Design, Scalability, and Distributed Systems
+
+SYSTEM DESIGN FUNDAMENTALS
+System design is the process of defining the architecture, components, and data flow of a system to satisfy requirements. Good system design balances reliability, scalability, performance, and maintainability.
+
+Requirements gathering:
+- Functional requirements: what the system does (features, APIs)
+- Non-functional requirements: how well it does it (latency, throughput, availability, consistency)
+- Scale estimation: users, requests/second, data volume, storage
+
+SCALABILITY
+Vertical scaling (scale-up): add more CPU/RAM/storage to existing machine. Simpler but limited and single point of failure.
+Horizontal scaling (scale-out): add more machines. More complex, unlimited, enables fault tolerance. Requires stateless design or distributed state.
+
+Load Balancing: distribute traffic across multiple servers. Algorithms: round-robin, least connections, consistent hashing (for cache affinity), weighted round-robin.
+Layer 7 (application): can route based on URL path, headers. Layer 4: routes based on IP/TCP.
+Health checks: load balancer removes unhealthy nodes. Common tools: Nginx, HAProxy, AWS ALB.
+
+CACHING
+Cache frequently accessed data in fast storage (memory) to reduce latency and database load.
+Cache-aside (lazy loading): application reads from cache; on miss, reads from DB, writes to cache. Most common.
+Write-through: write to cache and DB simultaneously. Consistent, adds write latency.
+Write-back: write to cache, async write to DB. Fast writes, risk of data loss.
+Read-through: cache transparently manages DB reads.
+
+Eviction policies: LRU (Least Recently Used), LFU, FIFO. TTL (time-to-live) for automatic expiration.
+Cache invalidation: hardest problem in caching. Strategies: TTL expiry, event-driven invalidation, cache versioning.
+Redis: in-memory key-value store. Supports strings, lists, sets, sorted sets, hashes. Persistence options. Pub/sub, Lua scripting. Industry standard for caching and real-time features.
+
+DATABASE DESIGN AND SELECTION
+Relational (SQL): structured data, ACID transactions, complex queries, relations. PostgreSQL (features, reliability), MySQL (widely used), SQLite (embedded).
+NoSQL categories:
+- Document: MongoDB, Firestore — flexible schema, good for hierarchical data
+- Key-value: Redis, DynamoDB — high throughput, simple access patterns
+- Column-family: Cassandra — write-heavy, time-series, wide rows
+- Graph: Neo4j — relationship traversal, social networks
+
+ACID properties: Atomicity (all or nothing), Consistency (valid state transitions), Isolation (concurrent transactions don't interfere), Durability (committed data persists).
+CAP theorem: Consistency, Availability, Partition tolerance — can only guarantee two simultaneously.
+
+MICROSERVICES ARCHITECTURE
+Decomposes system into small, independently deployable services. Each service: owns its data, communicates via APIs, independently scalable, independently deployable.
+
+Advantages: independent scaling and deployment, technology heterogeneity, fault isolation.
+Challenges: distributed system complexity, data consistency across services, service discovery, monitoring.
+
+Service communication:
+- Synchronous: HTTP/REST, gRPC (efficient binary protocol, streaming)
+- Asynchronous: message queues (Kafka, RabbitMQ, SQS), event streaming
+
+API Gateway: single entry point for clients. Handles routing, authentication, rate limiting, SSL termination.
+Service discovery: Consul, Kubernetes DNS, AWS Route 53.
+
+MESSAGE QUEUES AND EVENT STREAMING
+Decouples producers and consumers. Enables async processing, buffering, fan-out.
+Kafka: distributed log, high throughput, durable, replay. Topics, partitions, consumer groups. Good for event streaming, log aggregation.
+RabbitMQ: traditional message broker, routing flexibility, transient or durable messages. Good for task queues.
+SQS: AWS managed queue, at-least-once delivery, dead-letter queues.
+
+DISTRIBUTED SYSTEM CHALLENGES
+Consistency patterns:
+- Strong consistency: every read sees most recent write (expensive)
+- Eventual consistency: reads may return stale data, converges over time (scalable)
+Distributed tracing: Jaeger, Zipkin — trace requests across services.
+Circuit breaker pattern: prevent cascading failures when a service is down.
+Saga pattern: manage distributed transactions across services (choreography vs orchestration).
+
+CONTAINERIZATION AND ORCHESTRATION
+Docker: packages application + dependencies into portable container image. Dockerfile defines image.
+Kubernetes: orchestrates containers. Concepts: Pod, Deployment, Service, Ingress, ConfigMap, Secret. Auto-scaling, self-healing, rolling updates.
+
+MONITORING AND OBSERVABILITY
+Three pillars: Metrics (Prometheus + Grafana), Logs (ELK stack, CloudWatch), Traces (distributed tracing).
+SLI (Service Level Indicator): measured metric (p99 latency, error rate)
+SLO (Service Level Objective): target for SLI (p99 < 200ms)
+SLA (Service Level Agreement): contractual commitment

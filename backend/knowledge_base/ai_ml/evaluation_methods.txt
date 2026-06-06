@@ -1,0 +1,74 @@
+Chapter: Model Evaluation, Validation, and the Bias-Variance Tradeoff
+
+MODEL EVALUATION FUNDAMENTALS
+Evaluation measures how well a model will perform on unseen data. Using training data for evaluation gives optimistically biased estimates. A proper evaluation protocol requires held-out data not seen during training.
+
+Train/Validation/Test Split:
+- Training set: used to fit model parameters
+- Validation set: used to tune hyperparameters and select model architecture
+- Test set: used exactly once for final performance evaluation
+Never use test data for model selection, as this leads to selection bias.
+
+CROSS-VALIDATION
+K-fold cross-validation:
+1. Partition data into K equal folds
+2. For each fold: train on remaining K-1 folds, evaluate on current fold
+3. Average performance across K folds
+
+K=5 or K=10 are standard choices balancing bias and variance of the estimate.
+Stratified K-fold preserves class proportions in each fold — essential for imbalanced datasets.
+Leave-One-Out (LOO): K=n, nearly unbiased but computationally expensive.
+
+TIME SERIES: use time-ordered splits — never shuffle, always train on past, evaluate on future.
+
+CLASSIFICATION METRICS
+Confusion matrix (binary): TP (true positive), FP (false positive), FN (false negative), TN (true negative)
+
+Accuracy = (TP+TN)/(TP+TN+FP+FN): misleading for imbalanced classes
+Precision = TP/(TP+FP): of predicted positives, fraction that are correct
+Recall (Sensitivity/TPR) = TP/(TP+FN): of actual positives, fraction detected
+Specificity (TNR) = TN/(TN+FP): of actual negatives, fraction correctly identified
+F1-score = 2*P*R/(P+R): harmonic mean, good for imbalanced problems
+F_β-score: weights recall β times more than precision
+
+ROC Curve: plots TPR vs FPR at all decision thresholds. AUC-ROC (area under curve): 0.5 = random, 1.0 = perfect. Threshold-independent — measures discriminative ability.
+Precision-Recall Curve: better for severe class imbalance. AUC-PR is preferred when positive class is rare.
+
+Multi-class: macro-average (average per class, treats all classes equally), weighted-average (weights by class frequency), micro-average.
+
+REGRESSION METRICS
+MSE = (1/n)Σ(y - ŷ)²: penalizes large errors quadratically, same units as y²
+RMSE = √MSE: interpretable in original units
+MAE = (1/n)Σ|y - ŷ|: robust to outliers
+R² = 1 - SS_res/SS_tot: proportion of variance explained; 1.0 = perfect, 0 = predicts mean, can be negative
+
+BIAS-VARIANCE TRADEOFF
+Expected MSE = Bias² + Variance + σ²_noise
+
+Bias = (E[ŷ] - y): how much predictions systematically differ from truth. High bias → underfitting. Caused by over-simplified models.
+
+Variance = E[(ŷ - E[ŷ])²]: how much predictions vary for different training sets. High variance → overfitting. Caused by over-complex models.
+
+Irreducible noise σ²: inherent randomness in data, cannot be reduced.
+
+The tradeoff: reducing bias usually increases variance and vice versa. Goal: find the model complexity that minimizes total expected error.
+
+LEARNING CURVES
+Plot training and validation error vs training set size. Diagnose:
+- High bias: both curves plateau at high error → add features, reduce regularization, use more complex model
+- High variance: large gap between training and validation error → add more data, increase regularization, reduce model complexity
+
+HYPERPARAMETER TUNING
+Grid Search: exhaustive search over specified hyperparameter grid. Computationally expensive.
+Random Search: randomly sample from hyperparameter distributions. More efficient — often finds good solutions faster.
+Bayesian Optimization: builds probabilistic model of objective function, samples promising hyperparameters. Most efficient.
+
+STATISTICAL SIGNIFICANCE
+Model A vs Model B: use paired t-test or Wilcoxon signed-rank test on K-fold cross-validation scores. Avoid concluding one model is better based on small differences without statistical testing.
+
+IMBALANCED DATASETS
+Strategies:
+- Resampling: oversample minority class (SMOTE synthesizes new minority samples), undersample majority class
+- Class weights: penalize misclassification of minority class more heavily
+- Threshold moving: adjust decision threshold based on precision-recall requirements
+- Evaluation: use AUC-PR, F1 per class, confusion matrix — not accuracy

@@ -1,0 +1,76 @@
+Chapter: Neural Networks and Deep Learning
+
+A neural network is a computational model inspired by biological neural networks. It consists of interconnected nodes (neurons) organized in layers that transform input data through successive nonlinear transformations to produce output predictions.
+
+ARCHITECTURE FUNDAMENTALS
+The basic unit is the neuron (or node): it computes a weighted sum of its inputs, adds a bias, and applies a nonlinear activation function:
+output = activation(w₁x₁ + w₂x₂ + ... + wₙxₙ + b)
+
+Layers:
+- Input layer: receives raw features, no computation
+- Hidden layers: intermediate transformations, extract hierarchical features
+- Output layer: produces final prediction (class probabilities, regression value)
+
+The number of hidden layers defines the network depth. Deep neural networks (DNNs) have multiple hidden layers enabling them to learn complex hierarchical representations.
+
+ACTIVATION FUNCTIONS
+Activation functions introduce nonlinearity, enabling networks to learn complex functions:
+- Sigmoid: σ(x) = 1/(1+e^-x), outputs [0,1], used in binary output layers, suffers from vanishing gradients
+- Tanh: outputs [-1,1], zero-centered, still suffers from vanishing gradients
+- ReLU (Rectified Linear Unit): max(0,x), computationally efficient, mitigates vanishing gradient, standard choice for hidden layers, but can suffer from "dying ReLU" problem
+- Leaky ReLU: max(0.01x, x), prevents dying neurons
+- Softmax: converts logit vector to probability distribution, used in multi-class output layers
+
+BACKPROPAGATION
+Backpropagation is the algorithm for computing gradients of the loss with respect to all parameters in the network using the chain rule of calculus.
+
+Forward pass: compute predictions and loss
+Backward pass: propagate gradients from output to input, updating each parameter:
+∂L/∂w = ∂L/∂output * ∂output/∂w (chain rule applied recursively)
+
+The gradient of each layer's parameters depends on the gradients of all subsequent layers, hence "backpropagation."
+
+VANISHING AND EXPLODING GRADIENTS
+In deep networks, gradients can become exponentially small (vanish) or large (explode) as they propagate backward through many layers. Vanishing gradients prevent early layers from learning; exploding gradients cause numerical instability.
+
+Solutions:
+- Batch Normalization: normalizes layer inputs, stabilizes training, allows higher learning rates
+- Residual connections (ResNets): add skip connections so gradients flow directly through the network
+- Careful weight initialization (Xavier, He initialization)
+- Gradient clipping for exploding gradients
+
+CONVOLUTIONAL NEURAL NETWORKS (CNNs)
+CNNs are specialized for grid-structured data (images, audio). Key components:
+- Convolutional layers: apply learned filters (kernels) across the input, detecting local patterns
+- Pooling layers: reduce spatial dimensions, provide translation invariance (max pooling, average pooling)
+- Fully connected layers: final classification/regression
+
+CNNs achieve weight sharing across spatial positions, dramatically reducing parameters compared to fully connected networks. Deeper layers in CNNs learn increasingly abstract features (edges → textures → objects → scenes).
+
+RECURRENT NEURAL NETWORKS (RNNs)
+RNNs process sequential data by maintaining a hidden state that captures context from previous timesteps:
+h_t = tanh(W_h * h_{t-1} + W_x * x_t + b)
+
+Standard RNNs suffer from vanishing gradients over long sequences. LSTM (Long Short-Term Memory) and GRU (Gated Recurrent Unit) address this with gating mechanisms that selectively remember or forget information.
+
+TRANSFORMERS AND ATTENTION
+Self-attention allows each token to attend to all other tokens in a sequence, capturing long-range dependencies. The transformer architecture (attention + feedforward layers) has become dominant in NLP (BERT, GPT) and increasingly in vision (ViT).
+
+Attention: score(Q, K, V) = softmax(QK^T/√d_k)V
+Multi-head attention runs multiple attention heads in parallel, capturing different types of relationships.
+
+REGULARIZATION FOR NEURAL NETWORKS
+- Dropout: randomly zero activations with probability p during training
+- Batch Normalization: normalize activations, reduces covariate shift
+- Weight decay (L2 regularization)
+- Data augmentation: artificially expand training data through transformations
+- Early stopping based on validation loss
+
+OPTIMIZERS
+- SGD with momentum: accumulates gradient direction, accelerates convergence
+- Adam: adaptive learning rates per parameter, combines momentum and RMSprop
+- AdaGrad, RMSprop: adapt learning rates based on gradient history
+Adam is the default for most deep learning applications.
+
+TRANSFER LEARNING
+Pretrain a large model on a large dataset (e.g., ImageNet, large text corpus), then fine-tune on a smaller task-specific dataset. The pretrained weights encode general features that transfer to new tasks. Dramatically reduces data and compute requirements for new tasks.

@@ -1,0 +1,77 @@
+Chapter: Databases — Design, Optimization, and Modern Patterns
+
+RELATIONAL DATABASE DESIGN
+Normalization reduces data redundancy and improves integrity:
+1NF: atomic values, no repeating groups
+2NF: 1NF + no partial dependencies (non-key attributes fully dependent on primary key)
+3NF: 2NF + no transitive dependencies (non-key attributes depend only on primary key)
+BCNF: stronger 3NF variant
+
+Denormalization: intentionally add redundancy for read performance. Trade storage and write complexity for faster reads.
+
+Primary keys: uniquely identify rows. Natural keys (meaningful business data) vs surrogate keys (UUID, auto-increment). UUIDs are globally unique, good for distributed systems; auto-increment integers are compact and ordered.
+
+Foreign keys: enforce referential integrity. ON DELETE CASCADE, ON DELETE SET NULL, ON DELETE RESTRICT.
+Indexes: speed up reads at cost of write overhead and storage.
+
+INDEXING STRATEGIES
+B-tree index: balanced tree structure. O(log n) lookup, range queries, ORDER BY. Default index type in most databases.
+Hash index: O(1) equality lookup, no range queries. Used in hash joins.
+Composite index: index on multiple columns. Order matters — (A,B) index helps queries on A or (A,B), not on B alone.
+Covering index: index contains all columns needed for query, avoids table lookup.
+Partial index: index subset of rows (WHERE clause). Efficient for filtered queries.
+GIN/GiST indexes: for full-text search, array, JSON (PostgreSQL-specific).
+
+Query optimizer selects index automatically based on statistics. EXPLAIN ANALYZE shows query execution plan.
+
+SQL QUERY OPTIMIZATION
+Common performance issues:
+- Full table scan: no index, SELECT * instead of specific columns
+- N+1 queries: batch with IN clause or JOINs
+- Missing indexes on WHERE, JOIN, ORDER BY columns
+- Inefficient JOINs: use appropriate index columns for joining
+
+Techniques:
+- Avoid SELECT *: retrieve only needed columns
+- Use EXPLAIN ANALYZE to identify bottlenecks
+- Add indexes on frequently queried columns
+- Use covering indexes for read-heavy queries
+- Partition large tables (range, list, hash partitioning)
+- Read replicas for read scaling
+- Connection pooling (PgBouncer for PostgreSQL)
+
+TRANSACTIONS AND ISOLATION
+ACID: Atomicity, Consistency, Isolation, Durability.
+Transaction isolation levels (SQL standard):
+- READ UNCOMMITTED: can read uncommitted changes (dirty reads)
+- READ COMMITTED: only read committed changes (most common default)
+- REPEATABLE READ: same query returns same data within transaction
+- SERIALIZABLE: full isolation, transactions appear sequential
+
+Concurrency issues: dirty read, non-repeatable read, phantom read.
+Deadlocks: two transactions wait for each other's locks. Database detects and kills one. Prevent by acquiring locks in consistent order.
+
+POSTGRESQL SPECIFICS
+JSONB: binary JSON storage with indexing. Flexible schema within relational model.
+Window functions: RANK(), ROW_NUMBER(), LAG(), LEAD() — analytics without subqueries.
+CTEs (Common Table Expressions): WITH clause for readable complex queries, recursive CTEs.
+Full-text search: tsvector/tsquery, pg_trgm for fuzzy search.
+Listen/Notify: pub-sub within database.
+Partial indexes, expression indexes.
+pg_stat_statements: track query performance statistics.
+
+DATABASE MIGRATIONS
+Versioned, incremental DDL changes. Tools: Alembic (Python/SQLAlchemy), Flyway, Liquibase.
+Blue-green deployment: maintain backward compatibility — add columns nullable, never drop/rename in one step.
+Zero-downtime migrations: add column → backfill → add constraint → remove old column (multi-step).
+
+NOSQL DATABASES
+MongoDB: document store. Schema-flexible. BSON documents. Aggregation pipeline for complex queries. Sharding for horizontal scale. Replica sets for high availability.
+Redis: in-memory. Data structures: strings, hashes, lists, sets, sorted sets, streams. Pub/Sub, Lua scripting, transactions. Persistence: RDB snapshots, AOF (append-only file).
+Cassandra: wide-column store. Distributed, masterless, highly available. Data model driven by query patterns. Partition key determines data location. Good for time-series, write-heavy.
+Elasticsearch: distributed search and analytics engine. Inverted index for full-text search. RESTful API. Used for log aggregation, search.
+
+CHOOSING A DATABASE
+SQL when: complex queries, strong consistency, established relationships, reporting.
+NoSQL when: massive scale, flexible schema, simple access patterns, specific workloads (search, cache, graph).
+Often: use both — relational as primary, specialized databases for specific use cases (Redis for cache, Elasticsearch for search).

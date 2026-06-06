@@ -1,0 +1,63 @@
+Chapter: Decision Trees, Random Forests, and Ensemble Methods
+
+DECISION TREES
+A decision tree is a hierarchical model that partitions the feature space into rectangular regions through a sequence of binary splits. At each internal node, a feature and threshold are chosen to split the data; leaf nodes contain the prediction (class label or value).
+
+SPLITTING CRITERIA
+The quality of a split is measured by impurity reduction:
+
+Information Gain (ID3 algorithm):
+IG(D, feature) = Entropy(D) - Σ (|Dᵥ|/|D|) * Entropy(Dᵥ)
+Entropy(D) = -Σ p_c * log₂(p_c)
+
+Gini Impurity (CART algorithm):
+Gini(D) = 1 - Σ p_c²
+Lower Gini = purer split. CART builds binary trees and uses Gini for classification, MSE for regression.
+
+Gain Ratio (C4.5): normalizes Information Gain by split information to avoid bias toward high-cardinality features.
+
+TREE CONSTRUCTION (ID3/CART)
+1. At current node, try all possible splits on all features
+2. Select split that maximizes impurity reduction
+3. Recursively split each child node
+4. Stop when: maximum depth reached, minimum samples per leaf, or impurity below threshold
+
+OVERFITTING AND PRUNING
+Fully grown trees typically overfit. Pruning removes branches that provide little discriminative power:
+- Pre-pruning: stop growing when criteria are met (max depth, min samples)
+- Post-pruning (cost-complexity pruning): grow full tree, then remove subtrees that increase generalization error, using cross-validation to choose pruning level
+
+RANDOM FORESTS
+Random Forests combine multiple decision trees through bootstrap aggregation (bagging) + random feature selection:
+
+1. Draw B bootstrap samples from training data
+2. Grow a deep decision tree on each sample, but at each split, only consider a random subset of √p features
+3. Prediction: majority vote (classification) or average (regression)
+
+Key properties:
+- Reduces variance without increasing bias (bagging reduces variance)
+- Decorrelates trees (random feature selection prevents all trees from using the same strong features)
+- Out-of-bag (OOB) error: samples not in bootstrap are used for validation without separate test set
+- Feature importance: measures how much each feature reduces impurity across all trees
+
+GRADIENT BOOSTING
+Boosting builds trees sequentially, where each tree corrects errors of the previous ensemble:
+F_t(x) = F_{t-1}(x) + η * h_t(x)
+
+where h_t(x) is the new tree fitted to residuals (or negative gradients of loss).
+
+XGBoost enhancements: regularization terms in tree objective, second-order gradient information, efficient approximate split finding, handling of missing values. XGBoost/LightGBM consistently win tabular data competitions.
+
+AdaBoost: reweights misclassified samples, so subsequent trees focus on hard examples.
+
+BIAS-VARIANCE IN ENSEMBLES
+- Bagging (Random Forest): reduces variance, maintains bias → works best for low-bias, high-variance base learners (deep trees)
+- Boosting: reduces bias, can increase variance → works best for high-bias, low-variance base learners (shallow trees, stumps)
+- Stacking: trains a meta-learner on base learner predictions
+
+FEATURE IMPORTANCE
+Tree-based feature importance measures mean decrease in impurity (MDI). Permutation importance measures performance drop when a feature is randomly shuffled. SHAP values provide theoretically grounded, consistent feature attributions based on game theory (Shapley values).
+
+DECISION TREES vs NEURAL NETWORKS
+Trees: interpretable, no preprocessing needed, handles mixed data types, fast inference
+Neural networks: higher accuracy on image/text/audio, require more data and tuning, less interpretable
