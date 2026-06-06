@@ -9,8 +9,8 @@ backend/*.log
 backend/uploads/*
 !backend/uploads/.gitkeep
 
-# Vector store (rebuilt by ingest script)
-backend/chroma_db/
+# Vector store is committed pre-built (Gemini embeddings) so Render needs no ingest step.
+# (Rebuild locally with: rm -rf chroma_db && python scripts/ingest_knowledge.py)
 
 # Knowledge base books (copyrighted — fetched via scripts/download_books.py)
 backend/knowledge_base/**/*.pdf
