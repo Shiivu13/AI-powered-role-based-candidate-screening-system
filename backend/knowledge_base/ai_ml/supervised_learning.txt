@@ -1,0 +1,59 @@
+Chapter: Supervised Learning — Core Concepts and Foundations
+
+Supervised learning is the task of learning a function that maps inputs to outputs based on example input-output pairs. The learning algorithm infers a function from labeled training data consisting of a set of training examples. Each training example consists of an input vector and a desired output value (label).
+
+The key challenge in supervised learning is generalization — learning a function that performs well not just on training data, but on unseen data. This is measured through test error or generalization error.
+
+HYPOTHESIS SPACE AND INDUCTIVE BIAS
+The hypothesis space H is the set of all possible functions the learner can output. The choice of hypothesis space encodes the learner's inductive bias — the set of assumptions made to generalize beyond training data. For example, linear classifiers assume the decision boundary is a hyperplane, while polynomial classifiers have a more expressive hypothesis space.
+
+Without inductive bias, no generalization is possible (no-free-lunch theorem). Every machine learning algorithm implicitly encodes assumptions about the data distribution and problem structure.
+
+TRAINING AND GENERALIZATION
+Training error (empirical risk) measures performance on training data. Generalization error measures expected performance on new data drawn from the same distribution. The gap between these two is the generalization gap.
+
+A model with low training error but high test error is said to overfit — it has memorized training data rather than learned the underlying pattern. A model with both high training error and high test error underfits — it lacks sufficient capacity.
+
+REGRESSION vs CLASSIFICATION
+In regression, the output is a continuous value (e.g., house price prediction). Common algorithms include linear regression, polynomial regression, and regression trees. Loss functions include mean squared error (MSE) and mean absolute error (MAE).
+
+In classification, the output is a discrete label from a finite set. Binary classification has two classes; multi-class classification has K > 2 classes. Common algorithms include logistic regression, support vector machines, and neural networks.
+
+LOSS FUNCTIONS
+The choice of loss function fundamentally shapes what the model learns:
+- Mean Squared Error: penalizes large errors quadratically, sensitive to outliers
+- Cross-entropy loss: used for classification, measures divergence between predicted probabilities and true distribution
+- Hinge loss: used in SVMs, encourages a margin between classes
+
+GRADIENT DESCENT OPTIMIZATION
+Most supervised learning problems reduce to minimizing a loss function over training data. Gradient descent iteratively updates parameters in the direction of the negative gradient:
+θ = θ - α * ∇L(θ)
+
+where α is the learning rate and ∇L(θ) is the gradient of the loss.
+
+Variants: batch gradient descent (all data), stochastic gradient descent (one sample), mini-batch gradient descent (small batches). Mini-batch SGD is standard in deep learning as it balances computational efficiency with gradient estimation quality.
+
+OVERFITTING AND REGULARIZATION
+Regularization techniques reduce overfitting by penalizing model complexity:
+- L2 (Ridge): adds λ||w||² to loss, shrinks weights toward zero, smooth effect
+- L1 (Lasso): adds λ||w||₁ to loss, induces sparsity, useful for feature selection
+- Dropout: randomly zeroes neurons during training (neural networks)
+- Early stopping: halt training when validation error starts increasing
+
+BIAS-VARIANCE DECOMPOSITION
+Expected test error = Bias² + Variance + Irreducible Noise
+- High bias: model too simple, systematic error (underfitting)
+- High variance: model too complex, sensitive to training data (overfitting)
+- The bias-variance tradeoff guides model selection and hyperparameter tuning
+
+CROSS-VALIDATION
+K-fold cross-validation splits data into K folds, trains on K-1 folds, evaluates on remaining fold, rotates folds K times. Provides a better estimate of generalization error than a single train/test split. Leave-one-out cross-validation (LOOCV) is a special case where K equals the number of samples.
+
+EVALUATION METRICS
+Classification: accuracy, precision, recall, F1-score, ROC-AUC, confusion matrix
+- Precision = TP/(TP+FP): of predicted positives, how many are correct
+- Recall = TP/(TP+FN): of actual positives, how many were detected
+- F1-score = 2*(P*R)/(P+R): harmonic mean balancing precision and recall
+- ROC curve plots TPR vs FPR at various thresholds; AUC measures overall discriminative ability
+
+Regression: MSE, RMSE, MAE, R² (coefficient of determination)

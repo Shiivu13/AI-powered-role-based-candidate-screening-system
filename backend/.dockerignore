@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+chroma_db/
+*.db
+*.log
+.env
+test_resume.txt
+.cache/

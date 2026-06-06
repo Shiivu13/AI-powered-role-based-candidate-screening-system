@@ -1,0 +1,40 @@
+# ===== Python / Backend =====
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+backend/.env
+backend/*.db
+backend/*.log
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Vector store (rebuilt by ingest script)
+backend/chroma_db/
+
+# Knowledge base books (copyrighted — fetched via scripts/download_books.py)
+backend/knowledge_base/**/*.pdf
+
+# Test artifacts
+backend/test_resume.txt
+backend/srv*.log
+backend/server*.log
+
+# ===== Node / Frontend =====
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# ===== Logs =====
+*.log
+frontend/devserver.log
+
+# ===== Local tooling =====
+.claude/settings.local.json
+
+# ===== OS / Editor =====
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

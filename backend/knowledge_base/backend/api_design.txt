@@ -1,0 +1,96 @@
+Chapter: API Design, REST Principles, and Backend Architecture
+
+REST API DESIGN PRINCIPLES
+REST (Representational State Transfer) is an architectural style for distributed hypermedia systems.
+
+Core constraints:
+1. Stateless: each request contains all information needed; server holds no client state
+2. Uniform Interface: consistent URL structure, HTTP methods, status codes
+3. Client-Server: separation of concerns
+4. Cacheable: responses define cacheability
+5. Layered System: client doesn't know if it's talking to origin server or intermediary
+
+RESOURCE DESIGN
+URLs identify resources, not actions. Nouns, not verbs:
+Good: GET /users/{id}, POST /orders, DELETE /products/{id}
+Bad: GET /getUser, POST /createOrder, POST /deleteProduct
+
+Hierarchical relationships:
+GET /users/{userId}/orders — orders belonging to a user
+GET /users/{userId}/orders/{orderId} — specific order of a user
+
+Avoid deep nesting beyond 2-3 levels. Use query parameters for filtering:
+GET /products?category=electronics&sort=price&limit=20&offset=40
+
+HTTP METHODS
+GET: retrieve resource, idempotent, safe, cacheable
+POST: create resource, not idempotent, not safe
+PUT: replace resource completely, idempotent
+PATCH: partial update, not necessarily idempotent
+DELETE: remove resource, idempotent
+HEAD: same as GET but no body, check existence/metadata
+OPTIONS: describe communication options, used in CORS preflight
+
+HTTP STATUS CODES (most important)
+2xx Success: 200 OK, 201 Created, 204 No Content, 206 Partial Content
+3xx Redirection: 301 Moved Permanently, 302 Found, 304 Not Modified
+4xx Client Error: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 422 Unprocessable Entity, 429 Too Many Requests
+5xx Server Error: 500 Internal Server Error, 502 Bad Gateway, 503 Service Unavailable
+
+VERSIONING STRATEGIES
+URL versioning: /api/v1/users — most explicit, easy to route, clutters URLs
+Header versioning: Accept: application/vnd.api+json;version=1 — clean URLs, harder to test
+Query parameter: /api/users?version=1 — easy to test, mixed with query logic
+Semantic versioning: major.minor.patch — breaking changes increment major
+
+AUTHENTICATION AND AUTHORIZATION
+Authentication: verify identity (who are you?)
+Authorization: verify permission (what can you do?)
+
+JWT (JSON Web Token): stateless, self-contained. Header.Payload.Signature. Signed with secret (HS256) or private key (RS256). Verify by checking signature — no DB lookup needed. Short expiry (15min-1hr) + refresh tokens.
+
+OAuth 2.0: authorization framework for delegated access. Flows: Authorization Code (web apps), Client Credentials (machine-to-machine), PKCE extension for SPAs/mobile.
+API Keys: simple, for programmatic access. Must be sent over HTTPS, rotatable, scopable.
+
+RATE LIMITING
+Protect against abuse and DoS. Algorithms:
+- Token bucket: tokens added at fixed rate, each request consumes tokens. Allows bursts.
+- Leaky bucket: requests processed at fixed rate, excess queued/dropped. Smooth output.
+- Fixed window: count requests per fixed time window (minute/hour). Simple, susceptible to boundary bursts.
+- Sliding window: more accurate, prevents boundary bursts.
+
+Headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset. Return 429 when exceeded.
+
+ERROR HANDLING
+Consistent error response format:
+{
+  "error": "RESOURCE_NOT_FOUND",
+  "message": "User with id 123 does not exist",
+  "details": {...},
+  "request_id": "uuid"
+}
+
+Never expose stack traces or internal details in production. Log internally, return safe messages externally.
+
+PAGINATION
+Offset pagination: ?limit=20&offset=40. Simple but performance degrades for large offsets (database scans).
+Cursor pagination: ?limit=20&after=cursor_value. Efficient for large datasets, consistent during concurrent inserts. Preferred for real-time data.
+Return pagination metadata: total, limit, offset/cursor, next/prev links.
+
+API DOCUMENTATION
+OpenAPI (Swagger): machine-readable spec. Auto-generates client SDKs, interactive docs (Swagger UI). FastAPI generates this automatically from type hints.
+Document: authentication, all endpoints, request/response schemas, error codes, examples.
+
+FASTAPI SPECIFICS
+- Automatic OpenAPI generation from type hints
+- Pydantic validation for requests and responses
+- Dependency injection for shared logic (auth, DB sessions)
+- Background tasks for async non-blocking operations
+- Middleware for cross-cutting concerns (logging, CORS, authentication)
+
+DATABASE PATTERNS
+Repository pattern: abstract data access layer, makes testing easier.
+Unit of Work: manage transactions across repositories.
+CQRS: separate read and write models for complex domains.
+N+1 query problem: loading n related records triggers n additional queries. Solution: eager loading (JOIN) or dataloader (batching).
+Connection pooling: reuse database connections, limit max connections. Essential for production.

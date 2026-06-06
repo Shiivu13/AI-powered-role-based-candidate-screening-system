@@ -1,0 +1,81 @@
+Chapter: Reinforcement Learning and Bayesian Methods
+
+REINFORCEMENT LEARNING FOUNDATIONS
+Reinforcement learning (RL) is a framework where an agent learns to make decisions by interacting with an environment to maximize cumulative reward. Unlike supervised learning, there are no labeled examples — the agent discovers effective strategies through trial and error.
+
+Core components:
+- Agent: the learner and decision maker
+- Environment: what the agent interacts with
+- State (s): current situation of the agent
+- Action (a): decisions the agent can make
+- Reward (r): scalar feedback signal from the environment
+- Policy (π): mapping from states to actions (π: S → A)
+
+MARKOV DECISION PROCESS (MDP)
+RL problems are formalized as MDPs (S, A, P, R, γ):
+- S: state space
+- A: action space
+- P(s'|s,a): transition probability
+- R(s,a): reward function
+- γ ∈ [0,1]: discount factor (how much future rewards are valued)
+
+Markov property: the future depends only on the current state, not the history.
+
+VALUE FUNCTIONS
+The value function V^π(s) = E[Σ γᵗ rₜ | s₀=s, π]: expected cumulative discounted reward from state s following policy π.
+
+Q-function (action-value): Q^π(s,a) = E[Σ γᵗ rₜ | s₀=s, a₀=a, π]: expected return from state s taking action a then following π.
+
+Optimal policy π*: maximize V(s) for all states simultaneously.
+
+BELLMAN EQUATIONS
+Fundamental recursive relationship:
+V*(s) = max_a [R(s,a) + γ Σ P(s'|s,a) V*(s')]
+Q*(s,a) = R(s,a) + γ Σ P(s'|s,a) max_{a'} Q*(s',a')
+
+Q-LEARNING
+Model-free TD (temporal difference) method:
+Q(s,a) ← Q(s,a) + α[r + γ max_{a'} Q(s',a') - Q(s,a)]
+
+The term [r + γ max Q(s',a') - Q(s,a)] is the TD error. Converges to Q* under mild conditions. Off-policy: learns about optimal policy while following exploratory policy.
+
+DEEP Q-NETWORKS (DQN)
+Combines Q-learning with deep neural networks:
+- Neural network approximates Q(s,a; θ) for high-dimensional state spaces
+- Experience replay: store transitions in replay buffer, sample random minibatches (breaks correlation)
+- Target network: separate network for TD targets, updated periodically (stabilizes training)
+Enabled superhuman Atari game playing (DeepMind, 2015).
+
+POLICY GRADIENT METHODS
+Directly optimize the policy π_θ by computing ∇E[return] w.r.t. θ.
+REINFORCE algorithm: update in direction of ∇ log π_θ(a|s) * G_t
+Actor-Critic: actor (policy), critic (value function estimate baseline) — reduces variance.
+PPO (Proximal Policy Optimization): clips policy update to prevent large destabilizing steps. Industry standard.
+
+BAYESIAN LEARNING
+Bayesian approaches treat parameters as random variables and compute probability distributions over hypotheses.
+
+Bayes' theorem: P(h|D) = P(D|h) * P(h) / P(D)
+- Prior P(h): belief about hypothesis before seeing data
+- Likelihood P(D|h): probability of data given hypothesis
+- Posterior P(h|D): updated belief after seeing data
+- Evidence P(D): normalizing constant
+
+MAP (Maximum A Posteriori): θ_MAP = argmax P(θ|D) = argmax [P(D|θ) * P(θ)]
+MLE (Maximum Likelihood Estimation): θ_MLE = argmax P(D|θ) (ignores prior)
+MAP with Gaussian prior is equivalent to L2 regularization.
+
+NAIVE BAYES CLASSIFIER
+Assumes features are conditionally independent given the class:
+P(y|x₁,...,xₙ) ∝ P(y) Π P(xᵢ|y)
+
+Despite the "naive" independence assumption (rarely true in practice), works surprisingly well for text classification. Gaussian NB for continuous features; Multinomial NB for counts; Bernoulli NB for binary features.
+
+GAUSSIAN PROCESSES
+Non-parametric Bayesian approach: define a distribution over functions. Provides predictions with uncertainty estimates. Useful when uncertainty quantification is important (active learning, Bayesian optimization). Computationally expensive O(n³) for n training points.
+
+EXPLORATION VS EXPLOITATION
+Fundamental RL dilemma: exploit current knowledge (take best known action) vs explore new actions (discover potentially better options).
+- ε-greedy: take random action with probability ε
+- UCB (Upper Confidence Bound): take action with highest upper confidence bound
+- Thompson sampling: sample from posterior, take action maximizing sample

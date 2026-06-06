@@ -1,0 +1,67 @@
+Chapter: Model Selection, Evaluation, and ML Algorithms in Practice
+
+MODEL SELECTION PROCESS
+1. Define the problem: regression vs classification, metric, constraints
+2. Establish baseline: simple heuristic or simple model
+3. Explore multiple algorithms: start simple, increase complexity
+4. Tune hyperparameters: cross-validation + search strategy
+5. Evaluate on test set: only after all model choices made
+6. Deploy and monitor
+
+SCIKIT-LEARN ECOSYSTEM
+sklearn provides a consistent API: fit(X,y), predict(X), transform(X), fit_transform(X,y)
+Pipeline: chains preprocessing + model, prevents data leakage, simplifies cross-validation:
+pipe = Pipeline([('scaler', StandardScaler()), ('clf', LogisticRegression())])
+
+GridSearchCV / RandomizedSearchCV: hyperparameter search with cross-validation.
+ColumnTransformer: apply different transformations to different feature subsets.
+
+KEY ALGORITHMS AND WHEN TO USE THEM
+Linear Regression: interpretable, fast, assumes linear relationship. Start here for regression.
+Logistic Regression: interpretable, probabilistic, assumes linear decision boundary. Start here for classification.
+Decision Trees: interpretable, handles mixed types, no scaling needed, prone to overfitting.
+Random Forest: robust baseline, handles many feature types, provides feature importance, little tuning required.
+Gradient Boosting (XGBoost/LightGBM): often best for tabular data, requires careful tuning.
+SVM: effective for high-dimensional sparse data (text), sensitive to scaling, slow for large n.
+KNN: simple, no training, slow inference, needs scaling, poor for high dimensions.
+Neural Networks: best for images/text/audio, requires large data, complex tuning.
+Naive Bayes: fast, good for text classification, handles high dimensions well.
+
+ALGORITHM SELECTION GUIDELINES
+n < 1000: linear models, SVMs, decision trees
+n ∈ [1000, 100K]: random forest, gradient boosting, SVMs
+n > 100K: linear models, neural networks, gradient boosting
+High-dimensional sparse (text): logistic regression, linear SVM, Naive Bayes
+Need interpretability: linear/logistic regression, decision trees, SHAP with any model
+Images: CNNs
+Sequences/text: Transformers, RNNs
+Time series: ARIMA, LightGBM with lag features, LSTM
+
+HYPERPARAMETER TUNING STRATEGIES
+Grid Search: best for small search spaces (2-3 hyperparameters, few values each)
+Random Search: 10x more efficient than grid search for many hyperparameters (Bergstra & Bengio, 2012)
+Bayesian Optimization: Gaussian Process or TPE-based, most efficient for expensive evaluations
+Halving: train on small subset, progressively give more data to promising configs
+
+KEY HYPERPARAMETERS BY ALGORITHM
+Random Forest: n_estimators (more = better, diminishing returns), max_depth, min_samples_leaf, max_features
+Gradient Boosting: n_estimators, learning_rate (lower is better with more estimators), max_depth (3-6 typical), subsample, colsample_bytree
+Neural Networks: learning_rate, batch_size, architecture (layers/units), dropout, weight decay
+SVM: C (regularization), kernel, gamma (RBF kernel bandwidth)
+
+ENSEMBLE METHODS IN PRACTICE
+Blending/Stacking: train diverse models, use their predictions as features for a meta-learner. More powerful than single models, widely used in competitions.
+Diverse models learn from different inductive biases — gradient boosting + neural network + tree-based models tend to combine well.
+
+PRODUCTION CONSIDERATIONS
+Model size: smaller models deploy faster, use less memory
+Inference latency: tree models (fast), neural networks (GPU fast), KNN (slow)
+Retraining frequency: concept drift requires regular retraining
+Model monitoring: track input distribution shift, prediction drift, metric degradation
+Explainability: SHAP, LIME, attention weights for stakeholder communication
+
+PANDAS AND NUMPY ESSENTIALS
+Vectorized operations over loops for performance. GroupBy + aggregation for feature engineering. Merge/join for combining datasets. Datetime indexing for time series. Memory optimization: downcast dtypes, use categories for low-cardinality strings.
+
+EVALUATION IN PRACTICE
+Always report confidence intervals with cross-validation. Test significance before claiming model A > model B. Report multiple metrics (not just accuracy). Consider business impact, not just statistical performance.
