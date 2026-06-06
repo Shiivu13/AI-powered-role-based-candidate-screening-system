@@ -2,6 +2,8 @@
 
 An AI-powered role-based candidate screening system that conducts dynamic technical interviews using Retrieval-Augmented Generation (RAG).
 
+**🚀 Live Demo:** [https://ai-powered-role-based-candidate-scr-sage.vercel.app](https://ai-powered-role-based-candidate-scr-sage.vercel.app)
+
 ## ✨ What makes this different
 
 Beyond the baseline (upload → RAG → questions → summary), this system ships three standout capabilities:
