@@ -9,8 +9,11 @@ backend/*.log
 backend/uploads/*
 !backend/uploads/.gitkeep
 
-# Vector store is committed pre-built (Gemini embeddings) so Render needs no ingest step.
+# Vector store is committed pre-built (MiniLM embeddings) so Render needs no ingest step.
 # (Rebuild locally with: rm -rf chroma_db && python scripts/ingest_knowledge.py)
+
+# fastembed model cache (downloaded at build time on the host)
+backend/fastembed_cache/
 
 # Knowledge base books (copyrighted — fetched via scripts/download_books.py)
 backend/knowledge_base/**/*.pdf
