@@ -10,33 +10,50 @@ _embedder = None
 
 
 def _get_embedder():
-    """Custom embedder using transformers directly (avoids sentence-transformers v5 bugs)."""
+    """Local all-MiniLM-L6-v2 embedder — no per-query API quota (robust at runtime).
+
+    Prefers ChromaDB's built-in ONNX runtime (lightweight, ~200MB — fits small free
+    tiers like Render). Falls back to a torch implementation of the *same* model if
+    onnxruntime can't load (e.g. a Windows DLL issue locally). Both produce identical
+    384-dim vectors, so a vector store built with one is queryable by the other.
+    """
     global _embedder
     if _embedder is None:
-        from transformers import AutoTokenizer, AutoModel
-        import torch
-        import torch.nn.functional as F
+        try:
+            from chromadb.utils import embedding_functions
+            ef = embedding_functions.DefaultEmbeddingFunction()  # ONNX MiniLM-L6-v2
+            ef(["warmup"])  # force model load so a failure surfaces here
 
-        model_name = "sentence-transformers/all-MiniLM-L6-v2"
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModel.from_pretrained(model_name)
-        model.eval()
+            def encode(texts: list[str]) -> list[list[float]]:
+                return [list(v) for v in ef(list(texts))]
 
-        def encode(texts: list[str]) -> list[list[float]]:
-            with torch.no_grad():
-                encoded = tokenizer(
-                    texts, padding=True, truncation=True, max_length=256, return_tensors="pt"
-                )
-                output = model(**encoded)
-                mask = encoded["attention_mask"].unsqueeze(-1).float()
-                summed = (output.last_hidden_state * mask).sum(1)
-                counts = mask.sum(1).clamp(min=1e-9)
-                embeddings = summed / counts
-                embeddings = F.normalize(embeddings, p=2, dim=1)
-            return embeddings.numpy().tolist()
-
-        _embedder = encode
+            _embedder = encode
+        except Exception as onnx_err:
+            print(f"[embedder] ONNX unavailable ({onnx_err}); falling back to torch MiniLM")
+            _embedder = _torch_embedder()
     return _embedder
+
+
+def _torch_embedder():
+    from transformers import AutoTokenizer, AutoModel
+    import torch
+    import torch.nn.functional as F
+
+    model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModel.from_pretrained(model_name)
+    model.eval()
+
+    def encode(texts: list[str]) -> list[list[float]]:
+        with torch.no_grad():
+            enc = tokenizer(list(texts), padding=True, truncation=True, max_length=256, return_tensors="pt")
+            out = model(**enc)
+            mask = enc["attention_mask"].unsqueeze(-1).float()
+            emb = (out.last_hidden_state * mask).sum(1) / mask.sum(1).clamp(min=1e-9)
+            emb = F.normalize(emb, p=2, dim=1)
+        return emb.numpy().tolist()
+
+    return encode
 
 
 def _get_chroma():
