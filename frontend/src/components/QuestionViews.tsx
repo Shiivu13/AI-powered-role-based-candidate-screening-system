@@ -1,9 +1,9 @@
-import { useState } from "react";
-import type { Integrity, Question } from "../api/types";
+import { useEffect, useState } from "react";
+import type { Integrity, Question, Rubric } from "../api/types";
 import { useAnswerTelemetry, type AnswerTelemetry } from "../state/useAnswerTelemetry";
 import { useSpeech } from "../state/useSpeech";
-import { MicIcon, SearchIcon, ShieldIcon } from "./icons";
-import { Chip, DifficultyChip, Elapsed, ScoreBadge, Spinner } from "./ui";
+import { BulbIcon, MicIcon, SearchIcon, ShieldIcon } from "./icons";
+import { Chip, DifficultyChip, Elapsed, ScoreBadge, ScoreBar, Spinner } from "./ui";
 
 const TYPE_LABEL: Record<string, string> = {
   conceptual: "Conceptual",
@@ -30,11 +30,18 @@ export function AnswerBox({
   busy,
   onSubmit,
   onSkip,
+  onHint,
+  hintBusy = false,
+  listenSignal = 0,
 }: {
   q: Question;
   busy: boolean;
   onSubmit: (text: string, telemetry: AnswerTelemetry) => void;
   onSkip: () => void;
+  onHint?: () => void;
+  hintBusy?: boolean;
+  /** Incremented by voice mode when the interviewer finishes reading the question. */
+  listenSignal?: number;
 }) {
   const [text, setText] = useState("");
   const telemetry = useAnswerTelemetry();
@@ -43,6 +50,10 @@ export function AnswerBox({
     telemetry.addVoice(phrase.length + 1);
     setText((t) => (t && !t.endsWith(" ") ? `${t} ${phrase}` : `${t}${phrase}`));
   });
+  useEffect(() => {
+    if (listenSignal > 0 && speech.supported && !speech.listening) speech.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listenSignal]);
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   const send = () => {
     if (!text.trim()) return;
@@ -51,6 +62,11 @@ export function AnswerBox({
   };
   return (
     <div className="answer-box">
+      {q.hint && (
+        <div className="hint-box">
+          <BulbIcon /> <span>{q.hint}</span> <span className="muted small">(hint used: -15% on this question)</span>
+        </div>
+      )}
       <div className="textarea-wrap">
         <textarea
           autoFocus
@@ -91,6 +107,11 @@ export function AnswerBox({
               title="Answer by voice (browser speech recognition)"
             >
               <MicIcon /> {speech.listening ? "Stop" : "Speak"}
+            </button>
+          )}
+          {onHint && !q.hint && (
+            <button type="button" className="btn btn-ghost" onClick={onHint} disabled={busy || hintBusy} title="A nudge grounded in the reference material; costs 15% of this question's score">
+              {hintBusy ? <Spinner /> : <BulbIcon />} Hint
             </button>
           )}
           <button className="btn btn-ghost" onClick={onSkip} disabled={busy}>
@@ -140,8 +161,41 @@ export function IntegrityNote({ integrity }: { integrity: Integrity | null | und
   );
 }
 
+const RUBRIC_LABEL: Record<keyof Rubric, string> = {
+  correctness: "Correctness",
+  depth: "Depth",
+  application: "Application",
+  communication: "Communication",
+};
+
+export function RubricBars({ rubric }: { rubric: Partial<Rubric> | null | undefined }) {
+  if (!rubric || Object.keys(rubric).length === 0) return null;
+  return (
+    <div className="rubric">
+      {(Object.keys(RUBRIC_LABEL) as (keyof Rubric)[]).map((k) =>
+        rubric[k] == null ? null : (
+          <div key={k} className="rubric-row">
+            <span className="small">{RUBRIC_LABEL[k]}</span>
+            <ScoreBar score={rubric[k] as number} />
+            <span className="small mono">{(rubric[k] as number).toFixed(1)}</span>
+          </div>
+        ),
+      )}
+    </div>
+  );
+}
+
 export function Feedback({ q }: { q: Question }) {
   const a = q.answer;
+  if (a?.hidden)
+    return (
+      <div className="feedback">
+        <div className="feedback-head">
+          <ShieldIcon /> <strong>Answer recorded</strong>
+        </div>
+        <p className="muted">Assessment mode: scores and feedback are revealed in the final report.</p>
+      </div>
+    );
   if (q.status === "skipped")
     return (
       <div className="feedback">
@@ -165,6 +219,8 @@ export function Feedback({ q }: { q: Question }) {
         </div>
       </div>
       {a.feedback && <p>{a.feedback}</p>}
+      <RubricBars rubric={a.rubric} />
+      {a.hint_penalty ? <p className="small muted">Hint used: score reduced by {Math.round(a.hint_penalty * 100)}%.</p> : null}
       <div className="two-col">
         {a.covered_points.length > 0 && (
           <div>

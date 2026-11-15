@@ -5,6 +5,7 @@ import { api } from "./api/client";
 import type { Health } from "./api/types";
 import { Logo } from "./components/icons";
 import HistoryPage from "./pages/HistoryPage";
+import ComparePage from "./pages/ComparePage";
 import LabPage from "./pages/LabPage";
 import SessionPage from "./pages/SessionPage";
 import SetupPage from "./pages/SetupPage";
@@ -40,6 +41,7 @@ function App() {
           <NavLink to="/sessions" end>
             Sessions
           </NavLink>
+          <NavLink to="/compare">Compare</NavLink>
           <NavLink to="/lab">Retrieval lab</NavLink>
           <SystemStatus />
         </div>
@@ -48,6 +50,7 @@ function App() {
         <Route path="/" element={<SetupPage />} />
         <Route path="/sessions" element={<HistoryPage />} />
         <Route path="/sessions/:sessionId" element={<SessionPage />} />
+        <Route path="/compare" element={<ComparePage />} />
         <Route path="/lab" element={<LabPage />} />
         <Route path="*" element={<div className="page">Not found</div>} />
       </Routes>

@@ -18,6 +18,7 @@ export default function SetupPage() {
   const [roleId, setRoleId] = useState<string>("");
   const [name, setName] = useState("");
   const [numQuestions, setNumQuestions] = useState(6);
+  const [interviewMode, setInterviewMode] = useState<"practice" | "assessment">("practice");
   const [mode, setMode] = useState<"file" | "text">("file");
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState("");
@@ -73,6 +74,7 @@ export default function SetupPage() {
         roleId,
         candidateName: name,
         numQuestions,
+        mode: interviewMode,
         resumeFile: mode === "file" ? file : null,
         resumeText: mode === "text" ? text : undefined,
       });
@@ -196,6 +198,18 @@ export default function SetupPage() {
           </Card>
 
           <Card title="3. Interview settings">
+            <div className="mode-pick" role="radiogroup" aria-label="Interview mode">
+              <label className={interviewMode === "practice" ? "on" : ""}>
+                <input type="radio" name="mode" checked={interviewMode === "practice"} onChange={() => setInterviewMode("practice")} />
+                <strong>Practice</strong>
+                <div className="muted small">Score, feedback and sources after every answer.</div>
+              </label>
+              <label className={interviewMode === "assessment" ? "on" : ""}>
+                <input type="radio" name="mode" checked={interviewMode === "assessment"} onChange={() => setInterviewMode("assessment")} />
+                <strong>Assessment</strong>
+                <div className="muted small">Results stay hidden (server-side) until the final report.</div>
+              </label>
+            </div>
             <label className="field">
               <span>Candidate name (optional — read from the resume if empty)</span>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Priya Sharma" maxLength={200} />

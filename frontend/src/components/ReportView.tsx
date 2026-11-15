@@ -1,6 +1,6 @@
 import type { Report, SessionDetail } from "../api/types";
 import { DownloadIcon, FlagIcon, PrintIcon, ShieldIcon } from "./icons";
-import { Feedback, QuestionHeader, TracePanel } from "./QuestionViews";
+import { Feedback, QuestionHeader, RubricBars, TracePanel } from "./QuestionViews";
 import { Card, Chip, ScoreBar, ScoreRing } from "./ui";
 
 const REC_TONE: Record<string, string> = { strong_yes: "green", yes: "green", borderline: "amber", no: "red" };
@@ -156,6 +156,10 @@ export function ReportView({ report, session, onRestart }: { report: Report; ses
             <span>skipped</span>
           </div>
           <div>
+            <b>{ins.hints_used ?? 0}</b>
+            <span>hints</span>
+          </div>
+          <div>
             <b>{ins.avg_response_seconds != null ? `${Math.round(ins.avg_response_seconds)}s` : "—"}</b>
             <span>avg response</span>
           </div>
@@ -187,6 +191,12 @@ export function ReportView({ report, session, onRestart }: { report: Report; ses
           </ul>
         </Card>
         <Card title="Interview dynamics">
+          {report.competencies && Object.keys(report.competencies).length > 0 && (
+            <>
+              <h4 style={{ marginTop: 0 }}>Competency profile (average rubric)</h4>
+              <RubricBars rubric={report.competencies} />
+            </>
+          )}
           <DifficultyChart points={ins.difficulty_progression} />
           <p className="small muted">
             Grounded in: {ins.grounding.books_used.join(", ") || "—"} · {ins.grounding.llm_generated}/{ins.questions_asked} questions

@@ -4,8 +4,37 @@
 export interface Snapshot {
   session_id: string;
   version: number;
-  body: string;
-  sig: string;
+  body: string; // encrypted, opaque to the browser
+  summary?: SnapshotSummary | null;
+}
+
+export interface SnapshotSummary {
+  id: string;
+  candidate_name: string;
+  role_id: string;
+  status: "ready" | "in_progress" | "completed";
+  mode: "practice" | "assessment";
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  planned: number;
+  primary_asked: number;
+  asked: number;
+  answered: number;
+  skipped: number;
+  follow_ups: number;
+  difficulty_offset: number;
+  overall_score: number | null;
+}
+
+export type Rubric = { correctness: number; depth: number; application: number; communication: number };
+
+export interface HintResponse {
+  question_id: string;
+  hint: string;
+  penalty: number;
+  mode: string;
+  snapshot?: Snapshot | null;
 }
 
 export interface Book {
@@ -57,6 +86,9 @@ export interface Answer {
   missing_points: string[];
   misconceptions: string[];
   evaluation_mode: string | null;
+  rubric?: Rubric | null;
+  hint_penalty?: number | null;
+  hidden?: boolean;
   integrity: Integrity | null;
   response_seconds: number | null;
   answered_at: string;
@@ -124,6 +156,7 @@ export interface Question {
   status: "asked" | "answered" | "skipped";
   asked_at: string;
   expected_points: string[] | null;
+  hint?: string | null;
   answer: Answer | null;
   trace: QuestionTrace | null;
 }
@@ -144,6 +177,7 @@ export interface SessionSummary {
   role_id: string;
   role_title: string;
   status: "ready" | "in_progress" | "completed";
+  mode?: "practice" | "assessment";
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -195,6 +229,7 @@ export interface Report {
   role_id: string;
   role_title: string;
   overall_score: number;
+  competencies?: Partial<Rubric>;
   recommendation: { code: "strong_yes" | "yes" | "borderline" | "no"; label: string };
   topic_breakdown: {
     topic_id: string;
@@ -215,6 +250,7 @@ export interface Report {
     avg_answer_words: number;
     difficulty_progression: { position: number; difficulty: number; score: number | null }[];
     score_trend: string;
+    hints_used?: number;
     grounding: { books_used: string[]; llm_generated: number };
     integrity?: {
       level: "none" | "review" | "high";

@@ -3,6 +3,7 @@ import { forgetSnapshot, loadSnapshot, localSessionSummaries, saveSnapshot } fro
 import type {
   AnswerResponse,
   Benchmark,
+  HintResponse,
   Health,
   NextQuestionResponse,
   ReportResponse,
@@ -98,6 +99,7 @@ export interface CreateSessionInput {
   roleId: string;
   candidateName: string;
   numQuestions: number;
+  mode: "practice" | "assessment";
   resumeFile?: File | null;
   resumeText?: string;
 }
@@ -133,6 +135,7 @@ export const api = {
     form.append("role_id", input.roleId);
     form.append("candidate_name", input.candidateName);
     form.append("num_questions", String(input.numQuestions));
+    form.append("mode", input.mode);
     if (input.resumeFile) form.append("resume", input.resumeFile);
     else if (input.resumeText) form.append("resume_text", input.resumeText);
     return request<SessionDetail>("/sessions", { method: "POST", body: form }).then((s) => {
@@ -144,6 +147,8 @@ export const api = {
     sessionRequest<NextQuestionResponse>(id, `/sessions/${id}/questions/next`, { method: "POST" }),
   answer: (id: string, questionId: string, text: string, telemetry?: AnswerTelemetry) =>
     sessionRequest<AnswerResponse>(id, `/sessions/${id}/questions/${questionId}/answer`, json({ text, telemetry })),
+  hint: (id: string, questionId: string) =>
+    sessionRequest<HintResponse>(id, `/sessions/${id}/questions/${questionId}/hint`, { method: "POST" }),
   skip: (id: string, questionId: string) =>
     sessionRequest<AnswerResponse>(id, `/sessions/${id}/questions/${questionId}/skip`, { method: "POST" }),
   complete: (id: string) => sessionRequest<ReportResponse>(id, `/sessions/${id}/complete`, { method: "POST" }),

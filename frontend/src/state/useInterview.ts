@@ -16,7 +16,7 @@ interface State {
   session: SessionDetail | null;
   current: Question | null; // open question or the one whose feedback is shown
   report: Report | null;
-  busy: null | "generating" | "evaluating" | "completing";
+  busy: null | "generating" | "evaluating" | "completing" | "hinting";
   error: string | null;
   planDone: boolean; // the last answer closed the plan: offer "finish" instead of "next"
 }
@@ -26,6 +26,7 @@ type Action =
   | { type: "busy"; busy: State["busy"] }
   | { type: "question"; question: Question }
   | { type: "answered"; question: Question; done: boolean }
+  | { type: "hint"; questionId: string; hint: string }
   | { type: "finished" }
   | { type: "report"; report: Report }
   | { type: "session"; session: SessionDetail }
@@ -83,6 +84,15 @@ function reducer(state: State, action: Action): State {
         error: null,
         planDone: action.done,
       };
+    case "hint": {
+      const patch = (q: Question) => (q.id === action.questionId ? { ...q, hint: action.hint } : q);
+      return {
+        ...state,
+        busy: null,
+        current: state.current ? patch(state.current) : state.current,
+        session: state.session ? { ...state.session, questions: state.session.questions.map(patch) } : state.session,
+      };
+    }
     case "finished":
       return { ...state, busy: null, phase: "finished" };
     case "report":
@@ -154,6 +164,19 @@ export function useInterview(sessionId: string) {
     [sessionId],
   );
 
+  const hint = useCallback(
+    async (questionId: string) => {
+      dispatch({ type: "busy", busy: "hinting" });
+      try {
+        const res = await api.hint(sessionId, questionId);
+        dispatch({ type: "hint", questionId, hint: res.hint });
+      } catch (e) {
+        dispatch({ type: "error", error: message(e) });
+      }
+    },
+    [sessionId],
+  );
+
   const complete = useCallback(async () => {
     dispatch({ type: "busy", busy: "completing" });
     try {
@@ -167,5 +190,5 @@ export function useInterview(sessionId: string) {
 
   const clearError = useCallback(() => dispatch({ type: "clearError" }), []);
 
-  return { state, next, submit, skip, complete, refresh, clearError };
+  return { state, next, submit, skip, hint, complete, refresh, clearError };
 }

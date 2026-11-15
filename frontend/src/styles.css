@@ -232,7 +232,7 @@ input[type="range"] { accent-color: var(--primary); }
 .report-hero .hero-row { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; }
 .rec { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.45rem 0; }
 .col-actions { display: flex; flex-direction: column; gap: 0.5rem; }
-.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.9rem; }
+.stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.9rem; }
 .stats div { display: flex; flex-direction: column; align-items: center; }
 .stats b { font-size: 1.3rem; }
 .stats span { color: var(--muted); font-size: 0.78rem; }
@@ -317,3 +317,25 @@ svg { flex-shrink: 0; }
 .lab-bench { margin-top: 1rem; }
 .lab-bench h4 { margin-top: 1.2rem; }
 code { font-family: ui-monospace, Menlo, monospace; font-size: 0.85em; background: var(--surface-2); padding: 0.05rem 0.3rem; border-radius: 4px; }
+
+/* hints & rubric */
+.hint-box { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; background: var(--amber-bg); color: var(--amber); border-radius: 10px; padding: 0.55rem 0.8rem; margin-bottom: 0.6rem; }
+.hint-box span:first-of-type { color: var(--text); }
+.rubric { display: grid; gap: 0.35rem; margin: 0.6rem 0; max-width: 520px; }
+.rubric-row { display: grid; grid-template-columns: 110px 1fr 36px; gap: 0.6rem; align-items: center; }
+.rubric-row .bar { margin-top: 0; }
+
+/* mode picker */
+.mode-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.9rem; }
+.mode-pick label { border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.7rem; cursor: pointer; font-size: 0.88rem; }
+.mode-pick label.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 6%, var(--surface)); }
+.mode-pick input { accent-color: var(--primary); margin-right: 0.35rem; }
+.voice-toggle.on { border-color: var(--primary); color: var(--primary); }
+
+/* compare */
+.heat { text-align: center; font-weight: 600; border-radius: 6px; }
+.heat-green { background: var(--green-bg); color: var(--green); }
+.heat-amber { background: var(--amber-bg); color: var(--amber); }
+.heat-red { background: var(--red-bg); color: var(--red); }
+.table td.heat-cell { padding: 0.3rem; }
+.select { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 0.6rem; }

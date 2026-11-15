@@ -33,22 +33,6 @@ export function forgetSnapshot(sessionId: string) {
   }
 }
 
-interface SnapshotData {
-  session: {
-    id: string;
-    candidate_name: string;
-    role_id: string;
-    status: SessionSummary["status"];
-    created_at: string;
-    updated_at: string;
-    completed_at: string | null;
-    plan: unknown[];
-    difficulty_offset: number;
-  };
-  questions: { kind: string; status: string }[];
-  report: { data: { overall_score?: number } } | null;
-}
-
 /** Summaries of locally known sessions, for the history page. */
 export function localSessionSummaries(roleTitles: Record<string, string>): SessionSummary[] {
   const out: SessionSummary[] = [];
@@ -56,29 +40,26 @@ export function localSessionSummaries(roleTitles: Record<string, string>): Sessi
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key?.startsWith(PREFIX)) continue;
-      const snap = JSON.parse(localStorage.getItem(key) ?? "null") as Snapshot | null;
-      if (!snap) continue;
-      const json = atob(snap.body.replace(/-/g, "+").replace(/_/g, "/"));
-      const data = JSON.parse(new TextDecoder().decode(Uint8Array.from(json, (c) => c.charCodeAt(0)))) as SnapshotData;
-      const s = data.session;
-      const qs = data.questions;
+      const s = (JSON.parse(localStorage.getItem(key) ?? "null") as Snapshot | null)?.summary;
+      if (!s) continue;
       out.push({
         id: s.id,
         candidate_name: s.candidate_name,
         role_id: s.role_id,
         role_title: roleTitles[s.role_id] ?? s.role_id,
         status: s.status,
+        mode: s.mode,
         created_at: s.created_at,
         updated_at: s.updated_at,
         completed_at: s.completed_at,
-        overall_score: data.report?.data?.overall_score ?? null,
+        overall_score: s.overall_score,
         progress: {
-          planned: s.plan.length,
-          primary_asked: qs.filter((q) => q.kind === "primary").length,
-          asked: qs.length,
-          answered: qs.filter((q) => q.status === "answered").length,
-          skipped: qs.filter((q) => q.status === "skipped").length,
-          follow_ups: qs.filter((q) => q.kind === "follow_up").length,
+          planned: s.planned,
+          primary_asked: s.primary_asked,
+          asked: s.asked,
+          answered: s.answered,
+          skipped: s.skipped,
+          follow_ups: s.follow_ups,
           current_difficulty_offset: s.difficulty_offset,
         },
       });
