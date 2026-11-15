@@ -1,5 +1,13 @@
 // Mirrors backend/app/schemas.py
 
+/** Signed copy of a session's server state, kept by the browser (see backend services/snapshot.py). */
+export interface Snapshot {
+  session_id: string;
+  version: number;
+  body: string;
+  sig: string;
+}
+
 export interface Book {
   id: string;
   title: string;
@@ -165,18 +173,21 @@ export interface SessionDetail extends SessionSummary {
   questions: Question[];
   current_question_id: string | null;
   report_available: boolean;
+  snapshot?: Snapshot | null;
 }
 
 export interface NextQuestionResponse {
   done: boolean;
   question: Question | null;
   progress: Progress;
+  snapshot?: Snapshot | null;
 }
 
 export interface AnswerResponse {
   question: Question;
   progress: Progress;
   next_action: "next_question" | "complete";
+  snapshot?: Snapshot | null;
 }
 
 export interface Report {
@@ -225,6 +236,7 @@ export interface ReportResponse {
   session_id: string;
   created_at: string;
   report: Report;
+  snapshot?: Snapshot | null;
 }
 
 export interface Health {

@@ -11,7 +11,15 @@ export default function HistoryPage() {
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => api.listSessions().then(setSessions).catch((e) => setError(e.message));
+  const load = async () => {
+    try {
+      const roles = await api.roles().catch(() => []);
+      const titles = Object.fromEntries(roles.map((r) => [r.id, r.title]));
+      setSessions(await api.listSessions(titles));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
   useEffect(() => {
     void load();
   }, []);

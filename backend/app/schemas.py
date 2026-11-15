@@ -7,6 +7,13 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator
 
 
+class SnapshotIO(BaseModel):
+    session_id: str
+    version: int = 0
+    body: str = Field(max_length=2_000_000)
+    sig: str = Field(max_length=128)
+
+
 class BookOut(BaseModel):
     id: str
     title: str
@@ -112,12 +119,14 @@ class SessionDetail(SessionSummary):
     questions: list[QuestionOut]
     current_question_id: str | None
     report_available: bool
+    snapshot: SnapshotIO | None = None
 
 
 class NextQuestionOut(BaseModel):
     done: bool
     question: QuestionOut | None
     progress: Progress
+    snapshot: SnapshotIO | None = None
 
 
 class AnswerTelemetry(BaseModel):
@@ -147,12 +156,14 @@ class AnswerResult(BaseModel):
     question: QuestionOut
     progress: Progress
     next_action: Literal["next_question", "complete"]
+    snapshot: SnapshotIO | None = None
 
 
 class ReportOut(BaseModel):
     session_id: str
     created_at: datetime
     report: dict[str, Any]
+    snapshot: SnapshotIO | None = None
 
 
 class SearchIn(BaseModel):

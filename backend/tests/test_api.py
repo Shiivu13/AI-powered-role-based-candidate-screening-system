@@ -160,3 +160,76 @@ def test_benchmark_endpoint(client):
     assert response.status_code in (200, 404)
     if response.status_code == 200:
         assert "roles" in response.json()
+
+
+def test_session_restores_from_signed_snapshot(client, offline_llm, resume_text):
+    from app.db import SessionLocal
+    from app.models import InterviewSession
+
+    sid = _create(client, resume_text).json()["id"]
+    q = client.post(f"/api/sessions/{sid}/questions/next").json()["question"]
+    client.post(f"/api/sessions/{sid}/questions/{q['id']}/answer", json={"text": "Bagging averages bootstrap models."})
+    snap = client.get(f"/api/sessions/{sid}/snapshot").json()
+
+    # Simulate a serverless instance that has never seen this session.
+    with SessionLocal() as db:
+        db.delete(db.get(InterviewSession, sid))
+        db.commit()
+    assert client.get(f"/api/sessions/{sid}").status_code == 404
+
+    restored = client.post("/api/sessions/restore", json=snap)
+    assert restored.status_code == 200
+    detail = restored.json()
+    assert detail["id"] == sid and detail["questions"][0]["answer"]["score"] is not None
+    # interview continues normally after the restore
+    assert client.post(f"/api/sessions/{sid}/questions/next").status_code == 200
+    # restoring an older snapshot never rolls back newer progress
+    again = client.post("/api/sessions/restore", json=snap).json()
+    assert len(again["questions"]) == 2
+
+    tampered = dict(snap, body=snap["body"][:-4] + "AAAA")
+    assert client.post("/api/sessions/restore", json=tampered).status_code == 422
+
+
+def test_stale_copy_is_reported_as_missing(client, offline_llm, resume_text):
+    sid = _create(client, resume_text).json()["id"]
+    snap = client.get(f"/api/sessions/{sid}/snapshot").json()
+    assert client.get(f"/api/sessions/{sid}", headers={"X-Session-Version": str(snap["version"])}).status_code == 200
+    stale = client.get(f"/api/sessions/{sid}", headers={"X-Session-Version": str(snap["version"] + 5)})
+    assert stale.status_code == 404 and stale.json()["error"]["details"]["stale"] is True
+
+
+def test_restore_and_replay_in_one_request(client, offline_llm, resume_text):
+    import base64
+    import json
+
+    from app.db import SessionLocal
+    from app.models import InterviewSession
+
+    sid = _create(client, resume_text).json()["id"]
+    q = client.post(f"/api/sessions/{sid}/questions/next").json()["question"]
+    snap = client.get(f"/api/sessions/{sid}/snapshot").json()
+    with SessionLocal() as db:  # this "instance" forgets the session
+        db.delete(db.get(InterviewSession, sid))
+        db.commit()
+
+    body = json.dumps({"text": "Bagging averages models trained on bootstrap samples."}).encode()
+    response = client.post(
+        f"/api/sessions/{sid}/questions/{q['id']}/answer",
+        headers={"X-Session-Restore": "1", "X-Original-Method": "POST"},
+        json={"snapshot": snap, "body": base64.b64encode(body).decode(), "content_type": "application/json"},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["question"]["status"] == "answered"
+
+    # replaying a GET works the same way
+    with SessionLocal() as db:
+        db.delete(db.get(InterviewSession, sid))
+        db.commit()
+    got = client.post(f"/api/sessions/{sid}", headers={"X-Session-Restore": "1", "X-Original-Method": "GET"},
+                      json={"snapshot": response.json()["snapshot"], "body": None})
+    assert got.status_code == 200 and got.json()["id"] == sid
+
+    bad = client.post(f"/api/sessions/{sid}", headers={"X-Session-Restore": "1", "X-Original-Method": "GET"},
+                      json={"snapshot": dict(snap, sig="0" * 64), "body": None})
+    assert bad.status_code == 422

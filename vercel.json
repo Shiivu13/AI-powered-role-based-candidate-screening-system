@@ -3,5 +3,6 @@
   "framework": null,
   "installCommand": "cd frontend && npm install",
   "buildCommand": "cd frontend && BOA_OUT=../.vercel/output bash scripts/vercel-build.sh",
-  "outputDirectory": "frontend/dist"
+  "outputDirectory": "frontend/dist",
+  "fluid": true
 }

@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     # when it is installed and has been ingested, otherwise the compact export.
     vector_backend: Literal["auto", "chroma", "numpy"] = "auto"
     kb_dir: Path = BACKEND_DIR / "kb"
+    session_secret: str = ""  # HMAC key for session snapshots (see services/snapshot.py)
     books_dir: Path | None = None  # defaults to data_dir / "books"
     chroma_dir: Path | None = None  # defaults to data_dir / "chroma"
     index_dir: Path | None = None  # defaults to data_dir / "index"

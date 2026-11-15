@@ -3,5 +3,6 @@
   "framework": null,
   "installCommand": "npm install",
   "buildCommand": "bash scripts/vercel-build.sh",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "fluid": true
 }

@@ -13,6 +13,7 @@ from app.api import catalog, sessions
 from app.config import get_settings
 from app.db import init_db
 from app.errors import AppError
+from app.middleware import SessionRestoreMiddleware
 
 logger = logging.getLogger("app")
 
@@ -42,6 +43,7 @@ def create_app() -> FastAPI:
         description="Role-based candidate screening with Retrieval-Augmented question generation.",
         lifespan=lifespan,
     )
+    app.add_middleware(SessionRestoreMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -49,6 +51,7 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-Session-Version"],
     )
 
     @app.exception_handler(AppError)
