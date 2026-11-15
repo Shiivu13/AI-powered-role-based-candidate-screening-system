@@ -20,5 +20,5 @@ Record on the live site (https://ai-powered-role-based-candidate-scr-sage.vercel
 | 13 | 6:50 | README "Problems I ran into" | "Most of the RAG work was cleaning PDFs. Fixing one hyphenation bug alone improved retrieval measurably." |
 
 Tips:
-- For an assessment-mode take, repeat steps 2–6 with **Assessment** selected and show that the network response contains no score.
+- For an assessment-mode take, repeat steps 2 to 6 with **Assessment** selected and show that the network response contains no score.
 - Keep the browser zoom at 90% so the trace panel fits on screen.

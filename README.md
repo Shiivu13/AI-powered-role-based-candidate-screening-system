@@ -4,7 +4,7 @@ A screening interview that writes its own questions. You upload a resume and pic
 
 **Live demo:** https://ai-powered-role-based-candidate-scr-sage.vercel.app (Gemini-powered)
 
-Requirement-by-requirement mapping to the assignment brief: [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md). Demo walkthrough: [docs/DEMO.md](docs/DEMO.md).
+Project report: [docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md) ([PDF](docs/PROJECT_REPORT.pdf)). Requirement-by-requirement mapping to the brief: [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md). Demo walkthrough: [docs/DEMO.md](docs/DEMO.md).
 
 Built for the AI/ML & Backend intern assignment. Stack: FastAPI, SQLAlchemy, ChromaDB, scikit-learn, React + TypeScript, and Gemini (optional).
 
@@ -55,9 +55,9 @@ One book, Burkov's *Hundred-Page ML Book*, is hosted on a server whose TLS certi
 
 4. **Context → question.** The LLM receives the candidate profile, the plan item, the questions asked so far, and four numbered excerpts with book/section/page citations. It must return the question, the points a good answer covers, and which excerpts it used. Without an LLM, an extractive generator picks the most definitional sentences from the excerpts and builds the question around the section's concept and the candidate's skills.
 
-5. **Answer → evaluation.** The answer is graded 0–10 against the expected points *and* the source excerpts, returning covered points, missed points, misconceptions and feedback. Offline, grading uses the semantic and lexical coverage of each expected point.
+5. **Answer → evaluation.** The answer is graded 0 to 10 against the expected points *and* the source excerpts, returning covered points, missed points, misconceptions and feedback. Offline, grading uses the semantic and lexical coverage of each expected point.
 
-6. **Adaptation.** A score of 8 or more raises the difficulty of later questions; below 4 lowers it. A partial answer (4–7) gets one follow-up question on what was missed, and the follow-up never quotes the answer.
+6. **Adaptation.** A score of 8 or more raises the difficulty of later questions; below 4 lowers it. A partial answer (4 to 7) gets one follow-up question on what was missed, and the follow-up never quotes the answer.
 
 7. **Report.**
    - Difficulty-weighted overall score and a recommendation.
@@ -69,11 +69,15 @@ One book, Burkov's *Hundred-Page ML Book*, is hosted on a server whose TLS certi
 
 ## Things I added beyond the brief
 
-**Role fit and custom roles.** The three predefined roles follow the brief's three book groups. Two additions on top:
+### Role fit and custom roles
+
+The three predefined roles follow the brief's three book groups. Two additions on top:
 - **Role recommendation.** As soon as a resume is uploaded, it is scored against every role using the same topic-affinity measure the planner uses. Each role card shows a % match, the topics the resume covers, and the core topics it does not. The best fit is pre-selected.
 - **A custom role from any job description.** Paste a JD and the topics it asks for are extracted (keyword matching, plus Gemini's reading of required skills when available). The system then picks the knowledge bases that cover those topics and builds a role on the fly. Retrieval for that role searches every chosen collection, merges the results by RRF score, and keeps at most half the context from any one book. The role definition is stored with the session, so it survives reloads and serverless restores. This mirrors how real interviews are built: from a JD, not a fixed menu.
 
-**Retrieval benchmark** (`scripts/benchmark_retrieval.py`, results in [`docs/benchmarks/retrieval.md`](docs/benchmarks/retrieval.md) and in the app's Retrieval Lab). There is no labelled data for these books, so I used their structure:
+### Retrieval benchmark
+
+The script is `scripts/benchmark_retrieval.py`; results are in [`docs/benchmarks/retrieval.md`](docs/benchmarks/retrieval.md) and in the app's Retrieval Lab. There is no labelled data for these books, so I used their structure:
 - the title of a numbered section is the query;
 - that section's chunks are the relevant results.
 
@@ -97,27 +101,49 @@ No single retriever won on all three knowledge bases: BM25 has the best hit@4 on
 | **1000** | **0.712** | **0.303** | **0.571** |
 | 1500 | 0.712 | 0.264 | 0.523 |
 
-**One-click serverless deployment.** The full pipeline (scikit-learn + ChromaDB) is ~300 MB of dependencies, too heavy for a serverless function. So after ingestion the knowledge base is exported to a compact format in `backend/kb/`: float16 chunk embeddings, chunk texts, and the LSA model as a vocabulary plus a 256×20k projection. At runtime only NumPy is needed: a small re-implementation of the TF-IDF transform (checked against scikit-learn in `tests/test_compact.py`) and brute-force cosine search over a few thousand rows. Shrinking the LSA model from 384 dimensions over 60k terms to 256 over 20k cut it from 179 MB to 10 MB with no measurable loss on the benchmark. `frontend/scripts/vercel-build.sh` uses Vercel's Build Output API to ship the Vite site and the FastAPI app as one deployment (a 147 MB Python function), so the browser calls `/api` on the same origin.
+### Deployment with no setup
 
-**Self-healing sessions on serverless.** On Vercel every function instance has its own SQLite file in `/tmp`, so an interview's next request can land on an instance that has never seen it. In testing against the live deployment the Sessions page came up empty for exactly this reason. Instead of requiring a database, every API response now carries an encrypted snapshot of the session (Fernet: AES + HMAC), and the browser keeps the latest one. Encryption rather than just signing matters for assessment mode, where the candidate must not be able to read their own scores out of the snapshot. When an instance answers 404, or holds an older copy (detected from a progress version sent in `X-Session-Version`), the client retries the same request with the snapshot attached. A small ASGI middleware restores it and replays the original request **on that same instance**. A separate "restore, then retry" call does not work, because the two calls can hit different instances; a two-instance round-robin test reproduced that failure. With `POSTGRES_URL` or `DATABASE_URL` set, all of this is simply never triggered.
+The full pipeline (ChromaDB, scikit-learn, SciPy, NumPy) is about 400 MB installed, too heavy for a serverless function. So after ingestion the knowledge base is exported to a compact format in `backend/kb/`: float16 chunk embeddings, chunk texts, and the LSA model as a vocabulary plus a 256×20k projection. At runtime only NumPy is needed: a small re-implementation of the TF-IDF transform (checked against scikit-learn in `tests/test_compact.py`) and brute-force cosine search over a few thousand rows. Shrinking the LSA model from 384 dimensions over 60k terms to 256 over 20k cut it from 179 MB to 10 MB with no measurable loss on the benchmark. `frontend/scripts/vercel-build.sh` uses Vercel's Build Output API to ship the Vite site and the FastAPI app as one deployment (a 147 MB Python function), so the browser calls `/api` on the same origin.
 
-**Retrieval Lab** (`/lab` in the UI). Type a query and see what dense, BM25 and hybrid each return side by side, with ranks and scores, plus the benchmark tables. Useful for checking the retrieval layer directly instead of trusting it.
+### Sessions that survive serverless instances
 
-**Answer integrity signals.** Remote screening invites copy-paste. While the candidate answers, the UI records paste volume, keystrokes, active typing time and how often the tab lost focus. It never records what was typed beyond the answer itself. The backend combines this with how much of the answer appears verbatim in the source passages (6-gram overlap), which is the material a cheating candidate would find. The resulting flags are shown with their evidence: pasted answer, copied from the reference text, implausible typing speed, left the tab. They are **advisory and never change the score**: dictating into a notes app looks like pasting, and a reviewer should judge that, not a threshold. (During testing, the headless browser's simulated typing was flagged at ~860 wpm, as it should be.)
+On Vercel every function instance has its own SQLite file in `/tmp`, so an interview's next request can land on an instance that has never seen it. In testing against the live deployment the Sessions page came up empty for exactly this reason. Instead of requiring a database, every API response now carries an encrypted snapshot of the session (Fernet: AES + HMAC), and the browser keeps the latest one. Encryption rather than just signing matters for assessment mode, where the candidate must not be able to read their own scores out of the snapshot. When an instance answers 404, or holds an older copy (detected from a progress version sent in `X-Session-Version`), the client retries the same request with the snapshot attached. A small ASGI middleware restores it and replays the original request **on that same instance**. A separate "restore, then retry" call does not work, because the two calls can hit different instances; a two-instance round-robin test reproduced that failure. With `POSTGRES_URL` or `DATABASE_URL` set, all of this is simply never triggered.
 
-**Answer key hidden from the browser.** The API leaves out the expected points while a question is open. They are only returned after the candidate answers or skips.
+### Retrieval Lab
 
-**Rubric scoring instead of one number.** Every answer is scored on four dimensions: **correctness** (right, and hits the expected points), **depth** (explains *why*), **application** (connects the idea to a concrete situation) and **communication** (structured and precise). The overall score is a fixed weighting (0.4 / 0.25 / 0.2 / 0.15) computed in code from the rubric, so the LLM's headline number can never disagree with its own breakdown. The report averages these into a competency profile, which separates "knows the theory but can't apply it" from "practical but shallow".
+At `/lab` in the UI you can type a query and see what dense, BM25 and hybrid each return side by side, with ranks and scores, next to the benchmark tables. I used it to check the retrieval layer by hand.
 
-**Grounded hints.** A stuck candidate can ask for one hint per question. The hint is generated from that question's expected points without stating them, and costs 15% of that question's score. Hints used are counted in the report.
+### Answer integrity signals
 
-**Assessment mode vs practice mode.** Practice mode shows the score, rubric, feedback and source passages after every answer, which suits learning and demos. Assessment mode is for real screening: the **server** withholds scores, feedback, answer keys and retrieval traces until the interview is completed. Hiding them only in the UI would not be enough, because the network tab would still show them. The adaptive policy still runs on the hidden scores.
+Remote screening invites copy-paste. While the candidate answers, the UI records paste volume, keystrokes, active typing time and how often the tab lost focus. It never records what was typed beyond the answer itself. The backend combines this with how much of the answer appears verbatim in the source passages (6-gram overlap), which is the material a cheating candidate would find. The resulting flags are shown with their evidence: pasted answer, copied from the reference text, implausible typing speed, left the tab. They are **advisory and never change the score**: dictating into a notes app looks like pasting, and a reviewer should judge that, not a threshold. (During testing, the headless browser's simulated typing was flagged at ~860 wpm, as it should be.)
 
-**Voice interview mode.** The interviewer reads each question aloud (browser speech synthesis), then the microphone opens, so a whole interview can be done hands-free. Answers can also be dictated with live captions; dictated text is counted separately so it never triggers the typing-speed flag.
+### Answer key stays on the server
 
-**Compare candidates** (`/compare`). A recruiter view of every completed interview for a role: ranked by overall score, with rubric averages, a per-topic heatmap (each candidate had a personalised plan, so blank cells are expected) and integrity status.
+The API leaves out the expected points while a question is open. They are only returned after the candidate answers or skips.
 
-**Works offline, degrades gracefully.** Every LLM call goes through one client that retries on rate limits, and every stage has a deterministic fallback. The trace records which path produced each artefact and why it fell back.
+### Rubric scoring
+
+Every answer is scored on four dimensions: **correctness** (right, and hits the expected points), **depth** (explains *why*), **application** (connects the idea to a concrete situation) and **communication** (structured and precise). The overall score is a fixed weighting (0.4 / 0.25 / 0.2 / 0.15) computed in code from the rubric, so the LLM's headline number can never disagree with its own breakdown. The report averages these into a competency profile, which separates "knows the theory but can't apply it" from "practical but shallow".
+
+### Hints
+
+A stuck candidate can ask for one hint per question. The hint is generated from that question's expected points without stating them, and costs 15% of that question's score. Hints used are counted in the report.
+
+### Assessment and practice modes
+
+Practice mode shows the score, rubric, feedback and source passages after every answer, which suits learning and demos. Assessment mode is for real screening: the **server** withholds scores, feedback, answer keys and retrieval traces until the interview is completed. Hiding them only in the UI would not be enough, because the network tab would still show them. The adaptive policy still runs on the hidden scores.
+
+### Voice mode
+
+The interviewer reads each question aloud (browser speech synthesis), then the microphone opens, so a whole interview can be done hands-free. Answers can also be dictated with live captions; dictated text is counted separately so it never triggers the typing-speed flag.
+
+### Comparing candidates
+
+At `/compare`, a recruiter sees every completed interview for a role, ranked by overall score, with rubric averages, a per-topic heatmap and integrity status. Each candidate had a personalised plan, so blank cells are expected.
+
+### Offline mode and fallbacks
+
+Every LLM call goes through one client that retries on rate limits, and every stage has a deterministic fallback. The trace records which path produced each artefact and why it fell back.
 
 ## Problems I ran into
 
