@@ -73,8 +73,10 @@ class GeminiLLM(LLMClient):
         from google.genai import types
 
         self._types = types
+        # v1beta is required: the v1 endpoint rejects system instructions
+        # ("Developer instruction is not enabled for api version v1").
         self._client = genai.Client(
-            api_key=api_key, http_options=types.HttpOptions(timeout=timeout * 1000)
+            api_key=api_key, http_options=types.HttpOptions(api_version="v1beta", timeout=timeout * 1000)
         )
         self.model = model
         self.temperature = temperature

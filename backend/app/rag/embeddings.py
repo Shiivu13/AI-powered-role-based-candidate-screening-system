@@ -115,8 +115,9 @@ class GeminiEmbedder(Embedder):
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY is required for EMBEDDING_PROVIDER=gemini")
         from google import genai
+        from google.genai import types
 
-        self._client = genai.Client(api_key=api_key)
+        self._client = genai.Client(api_key=api_key, http_options=types.HttpOptions(api_version="v1beta"))
         self.model = model
         self.dim = dim
 
