@@ -1,0 +1,27 @@
+PRIYA SHARMA
+Machine Learning Engineer | Bengaluru, India
+
+SUMMARY
+Machine learning engineer with 3 years of experience building and deploying predictive models
+for fintech. Strong in Python, scikit-learn, XGBoost and PyTorch.
+
+EXPERIENCE
+ML Engineer, PayWise Fintech                                   Jan 2022 - Present
+- Built a credit-risk scoring model with XGBoost and gradient boosting; improved AUC from 0.78 to 0.84.
+- Designed a fraud detection pipeline using random forest and anomaly detection on transaction data.
+- Ran cross-validation and hyperparameter tuning (grid search); tracked experiments in MLflow.
+- Served models with FastAPI and Docker on AWS SageMaker.
+
+Data Science Intern, RetailCo                                  Jun 2021 - Dec 2021
+- Customer segmentation with k-means clustering and PCA on purchase data (pandas, NumPy).
+- Logistic regression churn model; reported precision/recall to the marketing team.
+
+PROJECTS
+- Loan Default Predictor: decision tree vs random forest comparison with feature engineering.
+- Sentiment classifier: fine-tuned a small neural network in PyTorch on product reviews.
+
+SKILLS
+Python, SQL, scikit-learn, XGBoost, PyTorch, pandas, NumPy, MLflow, Docker, AWS
+
+EDUCATION
+B.Tech in Computer Science, 2021

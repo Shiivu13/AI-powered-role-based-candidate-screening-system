@@ -1,0 +1,18 @@
+Arjun Mehta
+Data Analyst -> aspiring Data Scientist
+
+EXPERIENCE
+Data Analyst, HealthPlus Hospitals                              2023 - Present
+- Cleaned and joined patient records with SQL and pandas; built dashboards in Tableau.
+- Linear regression model to forecast weekly patient admissions (time series features).
+- Data preprocessing: missing values, scaling, one-hot encoding of categorical variables.
+
+PROJECTS
+- Diabetes risk prediction with logistic regression and k-nearest neighbors in scikit-learn.
+- Exploratory analysis of hospital readmissions with Matplotlib and Seaborn.
+
+SKILLS
+Python, pandas, NumPy, scikit-learn, SQL, Excel, Matplotlib, Seaborn, statistics
+
+EDUCATION
+B.Sc. Statistics, 2023
