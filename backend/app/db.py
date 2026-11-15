@@ -5,6 +5,7 @@ use another database. Tables are created on startup.
 """
 from __future__ import annotations
 
+import threading
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine, event
@@ -39,13 +40,25 @@ engine = _make_engine(get_settings().resolved_database_url)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
-def init_db() -> None:
-    from app import models  # noqa: F401 - register models
+_init_lock = threading.Lock()
+_initialized = False
 
-    Base.metadata.create_all(engine)
+
+def init_db() -> None:
+    global _initialized
+    with _init_lock:
+        if _initialized:
+            return
+        from app import models  # noqa: F401 - register models
+
+        Base.metadata.create_all(engine)
+        _initialized = True
 
 
 def get_db() -> Iterator[Session]:
+    # Also called lazily here: serverless runtimes (Vercel) do not send the
+    # ASGI lifespan event, so the startup hook alone is not enough.
+    init_db()
     db = SessionLocal()
     try:
         yield db

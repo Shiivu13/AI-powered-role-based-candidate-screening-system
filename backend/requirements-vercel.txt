@@ -1,0 +1,15 @@
+# Runtime dependencies for the Vercel function. No chromadb / scikit-learn:
+# the function serves the compact NumPy knowledge base in backend/kb.
+fastapi==0.163.1
+python-multipart==0.0.33
+pydantic==2.14.3
+pydantic-settings==2.16.3
+python-dotenv==1.2.4
+SQLAlchemy==2.1.8
+psycopg[binary]==3.2.13
+pypdf==7.1.0
+numpy==2.2.6  # newest release with manylinux2014 wheels (widest glibc support)
+rank-bm25==0.2.2
+google-genai==3.3.0
+# Used by the Vercel Python request handler (frontend/vercel/vc__handler__python.py)
+Werkzeug==1.0.1
