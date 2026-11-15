@@ -12,6 +12,7 @@ os.environ.update(
         "LLM_PROVIDER": "offline",
         "GEMINI_API_KEY": "",
         "EMBEDDING_PROVIDER": "lsa",
+        "VECTOR_BACKEND": "chroma",
         "EMBEDDING_DIM": "64",
         "CHUNK_SIZE": "450",
         "CHUNK_OVERLAP": "100",
@@ -30,7 +31,7 @@ from app.config import get_settings  # noqa: E402
 from app.rag.chunking import chunk_pages  # noqa: E402
 from app.rag.embeddings import get_embedder  # noqa: E402
 from app.rag.retriever import HybridRetriever  # noqa: E402
-from app.rag.vector_store import VectorStore  # noqa: E402
+from app.rag.vector_store import ChromaVectorStore  # noqa: E402
 from tests.corpus import corpus_pages  # noqa: E402
 
 RESUME = """Priya Sharma
@@ -58,7 +59,7 @@ def knowledge_base():
     embedder.fit([c.embedding_text for c in chunks] * 2)  # duplicate so min_df=2 keeps vocabulary
     vectors = embedder.embed([c.embedding_text for c in chunks])
     for role_id in ROLES:
-        store = VectorStore(role_id)
+        store = ChromaVectorStore(role_id)
         store.reset()
         store.add(chunks, vectors)
     HybridRetriever.invalidate()

@@ -144,7 +144,7 @@ def standard_methods(index: EvalIndex, lambdas=(0.9, 0.7), sparse_weights=(0.5, 
     return methods
 
 
-def fit_text_only_lsa(docs: list[Doc], dim: int = 384) -> LSAEmbedder:
+def fit_text_only_lsa(docs: list[Doc], dim: int = 256) -> LSAEmbedder:
     """A fresh LSA space fitted on chunk bodies only, so section titles cannot
     leak into the evaluation through the embedding model."""
     tmp = tempfile.mkdtemp()

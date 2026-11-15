@@ -18,7 +18,7 @@ from app.rag.chunking import Chunk, chunk_pages
 from app.rag.embeddings import LSAEmbedder, get_embedder
 from app.rag.loaders import load_document
 from app.rag.retriever import HybridRetriever
-from app.rag.vector_store import VectorStore
+from app.rag.vector_store import ChromaVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,8 @@ def _manifest_path() -> Path:
 
 
 def read_manifest() -> dict:
-    path = _manifest_path()
+    settings = get_settings()
+    path = settings.kb_dir / "manifest.json" if settings.effective_vector_backend == "numpy" else _manifest_path()
     if path.exists():
         return json.loads(path.read_text())
     return {"books": {}, "roles": {}}
@@ -104,7 +105,7 @@ def ingest_all(role_ids: list[str] | None = None, refit: bool = True) -> dict:
 
     for role_id in role_ids:
         role = ROLES[role_id]
-        store = VectorStore(role_id)
+        store = ChromaVectorStore(role_id)
         store.reset()
         role_chunks = [c for b in role.book_ids for c in chunks_by_book.get(b, [])]
         if role_chunks:
@@ -133,7 +134,7 @@ def ingest_extra_document(role_id: str, path: Path, title: str | None = None) ->
     slug = re.sub(r"[^a-z0-9]+", "_", (title or path.stem).lower()).strip("_")[:40]
     book = Book(f"custom_{slug}", title or path.stem, "uploaded", path.name, "")
     chunks, report = chunk_book(book, path)
-    store = VectorStore(role_id)
+    store = ChromaVectorStore(role_id)
     store.delete_book(book.id)
     if chunks:
         store.add(chunks, embedder.embed([c.embedding_text for c in chunks]))

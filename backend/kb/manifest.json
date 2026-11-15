@@ -1,0 +1,95 @@
+{
+  "books": {
+    "ai_ml_dl": {
+      "book_id": "ai_ml_dl",
+      "title": "Artificial Intelligence, Machine Learning, and Deep Learning",
+      "pages": 339,
+      "chunks": 528,
+      "avg_chunk_chars": 869,
+      "seconds": 2.3
+    },
+    "bishop": {
+      "book_id": "bishop",
+      "title": "Pattern Recognition and Machine Learning",
+      "pages": 758,
+      "chunks": 2057,
+      "avg_chunk_chars": 891,
+      "seconds": 14.0
+    },
+    "brownlee": {
+      "book_id": "brownlee",
+      "title": "Master Machine Learning Algorithms",
+      "pages": 163,
+      "chunks": 309,
+      "avg_chunk_chars": 772,
+      "seconds": 1.3
+    },
+    "intro_ml_python": {
+      "book_id": "intro_ml_python",
+      "title": "Introduction to Machine Learning with Python",
+      "pages": 392,
+      "chunks": 712,
+      "avg_chunk_chars": 881,
+      "seconds": 2.4
+    },
+    "mitchell": {
+      "book_id": "mitchell",
+      "title": "Machine Learning",
+      "pages": 421,
+      "chunks": 1333,
+      "avg_chunk_chars": 864,
+      "seconds": 8.8
+    },
+    "ml_absolute_beginners": {
+      "book_id": "ml_absolute_beginners",
+      "title": "Machine Learning for Absolute Beginners",
+      "pages": 128,
+      "chunks": 200,
+      "avg_chunk_chars": 908,
+      "seconds": 3.2
+    }
+  },
+  "roles": {
+    "ai_ml_engineer": {
+      "chunks": 1533,
+      "books": [
+        "mitchell",
+        "ml_absolute_beginners"
+      ],
+      "missing_books": [
+        "burkov"
+      ],
+      "ingested_at": "2026-11-15T14:59:30Z"
+    },
+    "data_scientist": {
+      "chunks": 1021,
+      "books": [
+        "intro_ml_python",
+        "brownlee"
+      ],
+      "missing_books": [],
+      "ingested_at": "2026-11-15T14:59:31Z"
+    },
+    "ml_research": {
+      "chunks": 2585,
+      "books": [
+        "bishop",
+        "ai_ml_dl"
+      ],
+      "missing_books": [],
+      "ingested_at": "2026-11-15T14:59:34Z"
+    }
+  },
+  "embedding_provider": "lsa",
+  "chunk_size": 1000,
+  "chunk_overlap": 200,
+  "compact": {
+    "dims": 256,
+    "vocab": 20000,
+    "roles": {
+      "ai_ml_engineer": 1533,
+      "data_scientist": 1021,
+      "ml_research": 2585
+    }
+  }
+}

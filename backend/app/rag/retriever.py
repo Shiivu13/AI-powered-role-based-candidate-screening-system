@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from rank_bm25 import BM25Okapi
-from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+from app.rag.stopwords import ENGLISH_STOP_WORDS
 
 from app.config import get_settings
 from app.rag.embeddings import get_embedder

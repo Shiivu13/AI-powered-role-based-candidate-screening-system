@@ -45,7 +45,9 @@ def collection_name(role_id: str, provider: str | None = None) -> str:
     return f"kb_{role_id}_{provider}".replace("-", "_")
 
 
-class VectorStore:
+class ChromaVectorStore:
+    """Writable store used by ingestion and the full local pipeline."""
+
     def __init__(self, role_id: str, provider: str | None = None):
         self.role_id = role_id
         self.name = collection_name(role_id, provider)
@@ -143,3 +145,46 @@ class VectorStore:
         for chunk in self.get_all():
             stats[chunk.metadata["book_id"]] = stats.get(chunk.metadata["book_id"], 0) + 1
         return stats
+
+
+class NumpyVectorStore:
+    """Read-only store over the compact export (see ``compact.py``): brute-force
+    cosine similarity over a few thousand float32 rows, which takes well under a
+    millisecond per query."""
+
+    def __init__(self, role_id: str):
+        from app.rag.compact import load_role
+
+        self.role_id = role_id
+        self.name = f"compact:{role_id}"
+        records, self.matrix = load_role(get_settings().kb_dir, role_id)
+        self.chunks = [StoredChunk(r["id"], r["text"], r["metadata"], self.matrix[i]) for i, r in enumerate(records)]
+        self.by_id = {c.id: c for c in self.chunks}
+
+    def count(self) -> int:
+        return len(self.chunks)
+
+    def query(self, embedding: np.ndarray, n_results: int) -> list[tuple[StoredChunk, float]]:
+        if not self.chunks:
+            return []
+        scores = self.matrix @ embedding
+        top = np.argsort(scores)[::-1][:n_results]
+        return [(self.chunks[i], float(scores[i])) for i in top]
+
+    def get_all(self, include_embeddings: bool = False) -> list[StoredChunk]:
+        return list(self.chunks)
+
+    def get_many(self, ids: list[str]) -> list[StoredChunk]:
+        return [self.by_id[i] for i in ids if i in self.by_id]
+
+    def book_stats(self) -> dict[str, int]:
+        stats: dict[str, int] = {}
+        for c in self.chunks:
+            stats[c.metadata["book_id"]] = stats.get(c.metadata["book_id"], 0) + 1
+        return stats
+
+
+def VectorStore(role_id: str):  # noqa: N802 - factory keeps the old call sites readable
+    if get_settings().effective_vector_backend == "numpy":
+        return NumpyVectorStore(role_id)
+    return ChromaVectorStore(role_id)

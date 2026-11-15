@@ -53,9 +53,10 @@ def _normalize(matrix: np.ndarray) -> np.ndarray:
 class LSAEmbedder(Embedder):
     name = "lsa"
 
-    def __init__(self, model_path: Path, dim: int = 384):
+    def __init__(self, model_path: Path, dim: int = 256, max_features: int = 20_000):
         self.model_path = model_path
         self.dim = dim
+        self.max_features = max_features
         self._vectorizer = None
         self._svd = None
         if model_path.exists():
@@ -83,7 +84,7 @@ class LSAEmbedder(Embedder):
             ngram_range=(1, 2),
             min_df=2,
             max_df=0.5,
-            max_features=60_000,
+            max_features=self.max_features,
             sublinear_tf=True,
             token_pattern=r"(?u)\b[a-zA-Z][a-zA-Z0-9\-]{1,}\b",
         )
@@ -164,6 +165,12 @@ def get_embedder(settings: Settings | None = None, *, refresh: bool = False) -> 
         )
     elif settings.embedding_provider == "sentence-transformers":
         _EMBEDDER = SentenceTransformerEmbedder(settings.st_model_name)
+    elif settings.effective_vector_backend == "numpy":
+        from app.rag.compact import NumpyLSAEmbedder
+
+        _EMBEDDER = NumpyLSAEmbedder(settings.kb_dir)
     else:
-        _EMBEDDER = LSAEmbedder(settings.resolved_index_dir / "lsa.joblib", settings.embedding_dim)
+        _EMBEDDER = LSAEmbedder(
+            settings.resolved_index_dir / "lsa.joblib", settings.embedding_dim, settings.lsa_max_features
+        )
     return _EMBEDDER

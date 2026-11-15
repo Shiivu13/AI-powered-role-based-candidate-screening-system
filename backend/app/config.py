@@ -6,6 +6,7 @@ All runtime configuration is read from environment variables (optionally via a
 """
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -14,6 +15,12 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
+ON_VERCEL = bool(os.environ.get("VERCEL"))
+
+
+def _default_data_dir() -> Path:
+    # Serverless functions can only write to /tmp.
+    return Path("/tmp/screenrag") if ON_VERCEL else BACKEND_DIR / "data"
 
 
 class Settings(BaseSettings):
@@ -34,8 +41,14 @@ class Settings(BaseSettings):
     cors_origin_regex: str | None = None
 
     # --- Storage -----------------------------------------------------------
-    data_dir: Path = BACKEND_DIR / "data"
+    data_dir: Path = Field(default_factory=_default_data_dir)
     database_url: str = ""  # defaults to sqlite file inside data_dir
+    postgres_url: str = ""  # set automatically by Vercel/Neon Postgres integrations
+    # Vector store: "chroma" (full pipeline, writable) or "numpy" (the compact,
+    # read-only export in backend/kb used for serverless). "auto" uses Chroma
+    # when it is installed and has been ingested, otherwise the compact export.
+    vector_backend: Literal["auto", "chroma", "numpy"] = "auto"
+    kb_dir: Path = BACKEND_DIR / "kb"
     books_dir: Path | None = None  # defaults to data_dir / "books"
     chroma_dir: Path | None = None  # defaults to data_dir / "chroma"
     index_dir: Path | None = None  # defaults to data_dir / "index"
@@ -53,7 +66,10 @@ class Settings(BaseSettings):
     # "gemini" uses the Gemini embedding API. "sentence-transformers" needs the
     # optional dependency and a downloadable model.
     embedding_provider: Literal["lsa", "gemini", "sentence-transformers"] = "lsa"
-    embedding_dim: int = 384
+    # 256 dims over a 20k-term vocabulary keeps the shipped model at ~10 MB
+    # (float16), small enough for a serverless function; see docs/benchmarks.
+    embedding_dim: int = 256
+    lsa_max_features: int = 20_000
     gemini_embedding_model: str = "gemini-embedding-001"
     st_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
 
@@ -78,13 +94,19 @@ class Settings(BaseSettings):
     min_num_questions: int = 3
     max_num_questions: int = 10
     max_follow_ups: int = 2
-    max_resume_bytes: int = 5 * 1024 * 1024
+    max_resume_bytes: int = 4 * 1024 * 1024  # Vercel caps request bodies at 4.5 MB
     min_resume_chars: int = 80
 
     @property
     def resolved_database_url(self) -> str:
         if self.database_url:
             return self.database_url
+        if self.postgres_url:
+            url = self.postgres_url
+            for prefix in ("postgres://", "postgresql://"):
+                if url.startswith(prefix):
+                    return "postgresql+psycopg://" + url[len(prefix):]
+            return url
         return f"sqlite:///{(self.data_dir / 'screening.db').as_posix()}"
 
     @property
@@ -98,6 +120,19 @@ class Settings(BaseSettings):
     @property
     def resolved_index_dir(self) -> Path:
         return self.index_dir or self.data_dir / "index"
+
+    @property
+    def effective_vector_backend(self) -> Literal["chroma", "numpy"]:
+        if self.vector_backend != "auto":
+            return self.vector_backend
+        try:
+            import chromadb  # noqa: F401
+        except ImportError:
+            return "numpy"
+        ingested = (self.resolved_chroma_dir / "chroma.sqlite3").exists()
+        if not ingested and (self.kb_dir / "manifest.json").exists():
+            return "numpy"
+        return "chroma"
 
     @property
     def effective_llm_provider(self) -> Literal["gemini", "offline"]:

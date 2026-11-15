@@ -9,7 +9,7 @@ install:            ## create venv + install backend and frontend dependencies
 	cd frontend && npm install
 
 kb:                 ## download the books and build the vector knowledge base
-	cd backend && ../$(PY) -m scripts.download_kb; ../$(PY) -m scripts.ingest_kb
+	cd backend && ../$(PY) -m scripts.download_kb; ../$(PY) -m scripts.ingest_kb && ../$(PY) -m scripts.export_kb
 
 api:                ## run the FastAPI backend on :8000
 	cd backend && ../.venv/bin/uvicorn app.main:app --reload --port 8000

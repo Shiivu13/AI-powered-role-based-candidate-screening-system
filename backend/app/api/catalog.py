@@ -74,8 +74,12 @@ def retrieval_benchmark():
 
     from app.config import BACKEND_DIR
 
-    path = BACKEND_DIR.parent / "docs" / "benchmarks" / "retrieval.json"
-    if not path.exists():
+    candidates = [
+        BACKEND_DIR.parent / "docs" / "benchmarks" / "retrieval.json",  # repo checkout
+        get_settings().kb_dir / "retrieval_benchmark.json",  # serverless bundle
+    ]
+    path = next((p for p in candidates if p.exists()), None)
+    if path is None:
         raise NotFound("No benchmark has been run yet. Run `python -m scripts.benchmark_retrieval`.")
     return json.loads(path.read_text())
 
@@ -92,6 +96,7 @@ def health():
         "llm_provider": llm.name,
         "llm_model": llm.model,
         "embedding_provider": settings.embedding_provider,
+        "vector_backend": settings.effective_vector_backend,
         "database": settings.resolved_database_url.split(":", 1)[0],
         "knowledge_base": {r: v.get("chunks", 0) for r, v in manifest.get("roles", {}).items()},
     }

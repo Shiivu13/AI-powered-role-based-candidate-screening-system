@@ -175,5 +175,6 @@ class HealthOut(BaseModel):
     llm_provider: str
     llm_model: str
     embedding_provider: str
+    vector_backend: str
     database: str
     knowledge_base: dict[str, Any]
