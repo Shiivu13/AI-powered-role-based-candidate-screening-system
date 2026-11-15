@@ -24,6 +24,8 @@ from app.ai.planner import DIFFICULTY_LABELS
 from app.ai.prompts import (
     FOLLOW_UP_SYSTEM,
     FOLLOW_UP_USER,
+    HINT_SYSTEM,
+    HINT_USER,
     PROMPT_VERSION,
     QUESTION_GENERATION_SYSTEM,
     QUESTION_GENERATION_USER,
@@ -290,3 +292,41 @@ def generate_follow_up(
         "rationale": "Partial answer: probing the most important missed point.",
         "generation": generation,
     }
+
+
+# Words that are long but say nothing about the concept a hint should point to.
+_GENERIC_HINT_WORDS = {
+    "developed", "implementation", "implementations", "approach", "approaches", "method", "methods",
+    "example", "examples", "following", "however", "various", "important", "different", "general",
+    "specific", "called", "described", "particular", "another", "because", "therefore", "algorithm",
+    "algorithms", "learning", "machine", "based", "using", "given", "number", "chapter", "section",
+    "simply", "often", "usually", "typically", "between", "within", "which", "where", "there", "their",
+}
+
+
+def generate_hint(*, question: str, expected_points: list[str]) -> dict:
+    """One nudge toward the most important expected point, without revealing it."""
+    llm = get_llm()
+    if llm.available and expected_points:
+        try:
+            data = llm.generate_json(
+                HINT_SYSTEM, HINT_USER.format(question=question, expected_points="; ".join(expected_points[:4]))
+            )
+            hint = str(data.get("hint", "")).strip()
+            if 5 < len(hint) < 300:
+                return {"hint": hint, "mode": "llm"}
+        except LLMError as exc:
+            logger.warning("LLM hint failed, using offline hint: %s", exc)
+    question_tokens = set(tokenize(question))
+    terms: list[str] = []
+    for point in expected_points:
+        for tok in sorted(dict.fromkeys(tokenize(point)), key=len, reverse=True):
+            if tok not in question_tokens and len(tok) > 4 and tok not in terms and tok not in _GENERIC_HINT_WORDS:
+                terms.append(tok)
+        if len(terms) >= 2:
+            break
+    if terms:
+        hint = f"Think about the role of {' and '.join(terms[:2])} in your explanation."
+    else:
+        hint = "Start from the underlying mechanism, then give one concrete example of where it matters."
+    return {"hint": hint, "mode": "heuristic"}

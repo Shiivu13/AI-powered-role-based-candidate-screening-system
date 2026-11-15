@@ -86,6 +86,9 @@ class FakeLLM(LLMClient):
                 "education": ["B.Tech"], "projects": [{"name": "Credit scoring", "summary": "XGBoost model", "technologies": ["XGBoost"]}],
                 "strength_signals": ["Improved AUC"],
             }
+        if "ONE small nudge" in system:
+            self.calls.append("hint")
+            return {"hint": "Consider what happens to variance when you average models."}
         if "follow-up" in system:
             self.calls.append("follow_up")
             return {"question": "Why does early stopping help gradient boosting?", "expected_points": ["validation set"], "source_ids": ["S1"], "rationale": "probe"}

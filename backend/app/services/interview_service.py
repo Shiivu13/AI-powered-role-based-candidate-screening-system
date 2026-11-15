@@ -20,7 +20,7 @@ from app.ai.answer_evaluator import evaluate_answer
 from app.ai.catalog import Role, get_role
 from app.ai.integrity import assess as assess_integrity
 from app.ai.planner import DIFFICULTY_LABELS, build_plan
-from app.ai.question_generator import generate_follow_up, generate_question
+from app.ai.question_generator import generate_follow_up, generate_hint, generate_question
 from app.ai.report_generator import build_report
 from app.ai.resume_parser import extract_resume_text, parse_resume
 from app.config import get_settings
@@ -34,6 +34,8 @@ logger = logging.getLogger(__name__)
 RAISE_BAR_AT = 8.0
 LOWER_BAR_BELOW = 4.0
 FOLLOW_UP_WINDOW = (4.0, 7.0)  # partial answers earn a follow-up
+HINT_PENALTY = 0.15  # share of the question's score lost when a hint was used
+MODES = ("practice", "assessment")
 
 
 # --------------------------------------------------------------------------- helpers
@@ -106,9 +108,12 @@ def create_session(
     resume_filename: str | None,
     resume_bytes: bytes | None,
     resume_text: str | None,
+    mode: str = "practice",
 ) -> InterviewSession:
     settings = get_settings()
     role = _role_or_error(role_id)
+    if mode not in MODES:
+        raise ValidationFailed(f"mode must be one of {', '.join(MODES)}")
 
     num_questions = num_questions or settings.default_num_questions
     if not settings.min_num_questions <= num_questions <= settings.max_num_questions:
@@ -145,6 +150,7 @@ def create_session(
         profile=profile,
         plan=[p.to_dict() for p in plan],
         num_questions=num_questions,
+        mode=mode,
     )
     db.add(session)
     db.commit()
@@ -309,6 +315,10 @@ def submit_answer(
     now = datetime.now(timezone.utc)
     response_seconds = round((now - _aware(question.asked_at)).total_seconds(), 1)
     sources = [c["snippet"] for c in (question.trace or {}).get("retrieval", {}).get("chunks", [])]
+    hint = (question.trace or {}).get("hint")
+    if hint:
+        evaluation["score"] = round(evaluation["score"] * (1 - HINT_PENALTY), 1)
+        evaluation["hint_penalty"] = HINT_PENALTY
     # Advisory only: integrity signals are stored for the reviewer, never folded into the score.
     evaluation["integrity"] = assess_integrity(text, telemetry, response_seconds, sources)
     evaluation["telemetry"] = telemetry or {}
@@ -324,6 +334,19 @@ def submit_answer(
     db.commit()
     db.refresh(session)
     return question
+
+
+def request_hint(db: Session, session: InterviewSession, question_id: str) -> dict:
+    """One grounded nudge per question; using it costs HINT_PENALTY of that question's score."""
+    question = _get_open_question(session, question_id)
+    existing = (question.trace or {}).get("hint")
+    if existing:
+        return existing
+    hint = {**generate_hint(question=question.text, expected_points=question.expected_points), "penalty": HINT_PENALTY}
+    question.trace = {**(question.trace or {}), "hint": hint}  # reassign so the JSON change is persisted
+    db.commit()
+    db.refresh(session)
+    return hint
 
 
 def skip_question(db: Session, session: InterviewSession, question_id: str) -> Question:

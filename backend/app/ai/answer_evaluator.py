@@ -25,6 +25,38 @@ from app.rag.retriever import tokenize
 
 logger = logging.getLogger(__name__)
 
+# Weights of the rubric dimensions in the overall score.
+RUBRIC_WEIGHTS = {"correctness": 0.4, "depth": 0.25, "application": 0.2, "communication": 0.15}
+_APPLICATION_CUES = re.compile(
+    r"\b(for example|e\.g\.|for instance|in practice|i would|we would|i used|we used|in my|suppose|such as|"
+    r"trade-?off|instead of|rather than|scenario|production|dataset|if the)\b",
+    re.IGNORECASE,
+)
+
+
+def rubric_score(rubric: dict[str, float]) -> float:
+    return round(sum(rubric[k] * w for k, w in RUBRIC_WEIGHTS.items()), 1)
+
+
+def _clip(value: float) -> float:
+    return round(max(0.0, min(10.0, float(value))), 1)
+
+
+def _offline_rubric(point_score: float, context_sim: float, answer: str) -> dict[str, float]:
+    words = len(answer.split())
+    sentences = [s for s in re.split(r"(?<=[.!?])\s+|\n+", answer.strip()) if len(s.split()) >= 3]
+    cues = len(_APPLICATION_CUES.findall(answer)) + len(re.findall(r"\d", answer)) // 3
+    avg_len = words / max(len(sentences), 1)
+    structure = min(len(sentences) / 3, 1.0) * (1.0 if 8 <= avg_len <= 35 else 0.6)
+    length = min(words / 60, 1.0) * (1.0 if words <= 400 else 0.8)
+    return {
+        "correctness": _clip(10 * point_score),
+        "depth": _clip(10 * (0.6 * min(context_sim / 0.5, 1.0) + 0.4 * min(words / 120, 1.0))),
+        "application": _clip(10 * min(cues / 3, 1.0)),
+        "communication": _clip(10 * (0.6 * structure + 0.4 * length)),
+    }
+
+
 _NON_ANSWERS = re.compile(r"^\s*(i\s*(do\s*not|don'?t)\s*know|no\s*idea|not\s*sure|skip|pass|n/?a|-+|\?+)\s*[.!]*\s*$", re.I)
 
 
@@ -68,8 +100,8 @@ def _offline_evaluate(question: str, expected_points: list[str], answer: str, co
     context_sim = 0.0
     if use_vectors and context:
         context_sim = max(float(embedder.embed_one(context) @ embedder.embed_one(answer)), 0.0)
-    substance = min(words / 80, 1.0)
-    score = 10 * (0.6 * point_score + 0.25 * min(context_sim / 0.5, 1.0) + 0.15 * substance)
+    rubric = _offline_rubric(point_score, context_sim, answer)
+    score = rubric_score(rubric)
     if words < 12:
         score = min(score, 3.0)
     score = round(max(0.0, min(10.0, score)), 1)
@@ -82,6 +114,7 @@ def _offline_evaluate(question: str, expected_points: list[str], answer: str, co
         feedback_parts.append("The answer is brief - explain the mechanism and give an example.")
     return {
         "score": score,
+        "rubric": rubric,
         "verdict": verdict_for(score),
         "covered_points": covered,
         "missing_points": missing,
@@ -107,6 +140,7 @@ def evaluate_answer(
         return {
             "score": 0.0,
             "verdict": "incorrect",
+            "rubric": {k: 0.0 for k in RUBRIC_WEIGHTS},
             "covered_points": [],
             "missing_points": expected_points,
             "misconceptions": [],
@@ -129,11 +163,14 @@ def evaluate_answer(
                 ),
                 temperature=0.0,
             )
-            score = float(data.get("score", 0))
-            score = round(max(0.0, min(10.0, score)), 1)
+            raw = data.get("rubric") or {}
+            rubric = {k: _clip(raw.get(k, data.get("score", 0))) for k in RUBRIC_WEIGHTS}
+            # The overall score is derived from the rubric so the two never disagree.
+            score = rubric_score(rubric) if data.get("rubric") else _clip(data.get("score", 0))
             meta.update(mode="llm", model=llm.model)
             return {
                 "score": score,
+                "rubric": rubric,
                 "verdict": data.get("verdict") or verdict_for(score),
                 "covered_points": [str(x) for x in data.get("covered_points", [])],
                 "missing_points": [str(x) for x in data.get("missing_points", [])],

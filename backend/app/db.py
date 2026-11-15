@@ -52,7 +52,18 @@ def init_db() -> None:
         from app import models  # noqa: F401 - register models
 
         Base.metadata.create_all(engine)
+        _migrate()
         _initialized = True
+
+
+def _migrate() -> None:
+    """Additive, idempotent column migrations for databases created by older versions."""
+    from sqlalchemy import inspect, text
+
+    columns = {c["name"] for c in inspect(engine).get_columns("interview_sessions")}
+    if "mode" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN mode VARCHAR(20) DEFAULT 'practice'"))
 
 
 def get_db() -> Iterator[Session]:

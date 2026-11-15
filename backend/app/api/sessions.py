@@ -6,7 +6,16 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.errors import InvalidState, NotFound
-from app.schemas import AnswerIn, AnswerResult, NextQuestionOut, ReportOut, SessionDetail, SessionSummary, SnapshotIO
+from app.schemas import (
+    AnswerIn,
+    AnswerResult,
+    HintOut,
+    NextQuestionOut,
+    ReportOut,
+    SessionDetail,
+    SessionSummary,
+    SnapshotIO,
+)
 from app.services import interview_service as svc
 from app.services.serializers import question_dict, session_detail, session_summary
 from app.services.snapshot import export_snapshot, restore_snapshot, snapshot_version
@@ -28,6 +37,7 @@ def create_session(
     role_id: str = Form(...),
     candidate_name: str = Form(""),
     num_questions: int | None = Form(None),
+    mode: str = Form("practice"),
     resume_text: str | None = Form(None),
     resume: UploadFile | None = File(None),
     db: Session = Depends(get_db),
@@ -42,6 +52,7 @@ def create_session(
         resume_filename=resume.filename if resume is not None else None,
         resume_bytes=content or None,
         resume_text=resume_text,
+        mode=mode,
     )
     return {**session_detail(session), "snapshot": export_snapshot(session)}
 
@@ -104,6 +115,15 @@ def answer_question(
         "next_action": "complete" if svc.is_plan_exhausted(session) else "next_question",
         "snapshot": export_snapshot(session),
     }
+
+
+@router.post("/{session_id}/questions/{question_id}/hint", response_model=HintOut)
+def hint(session_id: str, question_id: str, db: Session = Depends(get_db), x_session_version: int | None = Header(None)):
+    """One grounded nudge for the open question; costs part of that question's score."""
+    session = _load(db, session_id, x_session_version)
+    data = svc.request_hint(db, session, question_id)
+    return {"question_id": question_id, "hint": data["hint"], "penalty": data["penalty"], "mode": data["mode"],
+            "snapshot": export_snapshot(session)}
 
 
 @router.post("/{session_id}/questions/{question_id}/skip", response_model=AnswerResult)

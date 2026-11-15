@@ -10,8 +10,8 @@ from pydantic import BaseModel, Field, field_validator
 class SnapshotIO(BaseModel):
     session_id: str
     version: int = 0
-    body: str = Field(max_length=2_000_000)
-    sig: str = Field(max_length=128)
+    body: str = Field(max_length=3_000_000)
+    summary: dict[str, Any] | None = None
 
 
 class BookOut(BaseModel):
@@ -63,7 +63,10 @@ class AnswerOut(BaseModel):
     missing_points: list[str] = []
     misconceptions: list[str] = []
     evaluation_mode: str | None = None
+    rubric: dict[str, float] | None = None
+    hint_penalty: float | None = None
     integrity: dict[str, Any] | None = None
+    hidden: bool = False
     response_seconds: float | None = None
     answered_at: datetime
 
@@ -85,6 +88,7 @@ class QuestionOut(BaseModel):
     asked_at: datetime
     # Hidden while the question is open so the answer key never reaches the candidate.
     expected_points: list[str] | None = None
+    hint: str | None = None
     answer: AnswerOut | None = None
     trace: dict[str, Any] | None = None
 
@@ -105,6 +109,7 @@ class SessionSummary(BaseModel):
     role_id: str
     role_title: str
     status: Literal["ready", "in_progress", "completed"]
+    mode: Literal["practice", "assessment"] = "practice"
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None = None
@@ -150,6 +155,14 @@ class AnswerIn(BaseModel):
         if not value.strip():
             raise ValueError("Answer cannot be blank")
         return value.strip()
+
+
+class HintOut(BaseModel):
+    question_id: str
+    hint: str
+    penalty: float
+    mode: str
+    snapshot: SnapshotIO | None = None
 
 
 class AnswerResult(BaseModel):

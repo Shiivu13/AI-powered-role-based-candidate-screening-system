@@ -83,3 +83,21 @@ def test_offline_evaluation_rewards_coverage(offline_llm):
     assert good["score"] > weak["score"]
     assert len(good["covered_points"]) >= 1
     assert good["evaluation"]["mode"] == "heuristic"
+
+
+def test_llm_rubric_drives_the_overall_score(fake_llm, monkeypatch):
+    from app.ai import answer_evaluator
+
+    monkeypatch.setattr(fake_llm, "generate_json", lambda system, user, **kw: {
+        "rubric": {"correctness": 9, "depth": 6, "application": 4, "communication": 8},
+        "score": 2, "verdict": "good", "covered_points": [], "missing_points": [], "misconceptions": [], "feedback": "ok",
+    })
+    result = answer_evaluator.evaluate_answer(question="q", expected_points=["a"], answer="a real answer here", context="c", difficulty=2)
+    # 0.4*9 + 0.25*6 + 0.2*4 + 0.15*8 = 7.1, the model's inconsistent "score": 2 is ignored
+    assert result["score"] == 7.1 and result["rubric"]["application"] == 4
+
+
+def test_llm_hint(fake_llm):
+    from app.ai.question_generator import generate_hint
+
+    assert generate_hint(question="q", expected_points=["variance reduction"])["mode"] == "llm"

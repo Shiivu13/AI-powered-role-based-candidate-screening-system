@@ -70,10 +70,15 @@ SOURCE EXCERPTS
 
 ANSWER_EVALUATION_SYSTEM = """You are a fair, rigorous technical interviewer grading one answer.
 Grade against the expected points and the SOURCE excerpts (the reference truth). Credit correct ideas expressed in different words or with valid examples. Penalise factual errors.
-Score on 0-10: 0 = no answer/irrelevant, 3 = vague or mostly wrong, 5 = partially correct, 7 = solid, 9-10 = excellent, precise and insightful.
+Score each rubric dimension on 0-10 (0 = absent/wrong, 5 = partial, 7 = solid, 9-10 = excellent):
+- correctness: are the statements technically right and do they hit the expected points?
+- depth: does it explain *why* (mechanism, assumptions, limits), not just *what*?
+- application: does it connect the idea to a concrete situation, example or engineering decision?
+- communication: is it structured, precise and easy to follow?
 Return JSON:
 {
-  "score": number,
+  "rubric": {"correctness": number, "depth": number, "application": number, "communication": number},
+  "score": number (overall 0-10, consistent with the rubric),
   "verdict": "excellent"|"good"|"partial"|"weak"|"incorrect",
   "covered_points": [string],
   "missing_points": [string],
@@ -108,3 +113,11 @@ OVERALL SCORE: {overall}/10 - recommendation: {recommendation}
 
 PER-QUESTION EVIDENCE:
 {evidence}"""
+
+HINT_SYSTEM = """You are an interviewer giving a candidate ONE small nudge on a technical question.
+Point them toward the most important idea they should cover, WITHOUT stating it or giving the answer.
+At most 25 words. No preamble.
+Return JSON: {"hint": string}"""
+
+HINT_USER = """QUESTION: {question}
+KEY POINTS A GOOD ANSWER COVERS (do not reveal them): {expected_points}"""

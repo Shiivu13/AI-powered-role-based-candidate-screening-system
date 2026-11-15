@@ -49,6 +49,8 @@ class InterviewSession(Base):
     candidate_name: Mapped[str] = mapped_column(String(200))
     role_id: Mapped[str] = mapped_column(String(64), index=True)
     status: Mapped[str] = mapped_column(String(20), default=SessionStatus.READY, index=True)
+    # "practice": feedback after every answer; "assessment": results only in the final report
+    mode: Mapped[str] = mapped_column(String(20), default="practice")
     resume_filename: Mapped[str | None] = mapped_column(String(255))
     resume_text: Mapped[str] = mapped_column(Text)
     profile: Mapped[dict] = mapped_column(JSON, default=dict)

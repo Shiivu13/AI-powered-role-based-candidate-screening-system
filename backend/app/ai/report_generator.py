@@ -97,6 +97,7 @@ def build_report(*, role: Role, profile: dict, plan: list[dict], questions: list
             for q in questions
         ],
         "score_trend": _trend([s for _, s in scored]),
+        "hints_used": sum(bool(q.get("hint")) for q in questions),
         "integrity": _integrity_summary(answered),
         "grounding": {
             "books_used": sorted({c["book_title"] for q in questions for c in q.get("trace", {}).get("retrieval", {}).get("chunks", [])}),
@@ -140,8 +141,16 @@ def build_report(*, role: Role, profile: dict, plan: list[dict], questions: list
         except LLMError as exc:
             logger.warning("LLM report narrative failed: %s", exc)
 
+    rubrics = [q["answer"]["rubric"] for q in answered if (q.get("answer") or {}).get("rubric")]
+    competencies = (
+        {k: round(mean(r[k] for r in rubrics), 1) for k in ("correctness", "depth", "application", "communication")}
+        if rubrics
+        else {}
+    )
+
     return {
         "candidate_name": candidate_name,
+        "competencies": competencies,
         "role_id": role.id,
         "role_title": role.title,
         "overall_score": overall,

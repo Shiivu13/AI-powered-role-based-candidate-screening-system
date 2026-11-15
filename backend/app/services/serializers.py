@@ -7,11 +7,19 @@ from app.models import InterviewSession, Question, QuestionStatus
 from app.services.interview_service import pending_question, progress
 
 
-def answer_dict(question: Question) -> dict | None:
+def results_hidden(session: InterviewSession) -> bool:
+    """Assessment mode keeps every score, answer key and source passage away
+    from the candidate's browser until the interview is completed."""
+    return session.mode == "assessment" and session.status != "completed"
+
+
+def answer_dict(question: Question, hidden: bool = False) -> dict | None:
     a = question.answer
     if a is None:
         return None
     ev = a.evaluation or {}
+    if hidden:
+        return {"text": a.text, "score": None, "hidden": True, "response_seconds": a.response_seconds, "answered_at": a.answered_at}
     return {
         "text": a.text,
         "score": a.score,
@@ -22,6 +30,8 @@ def answer_dict(question: Question) -> dict | None:
         "misconceptions": ev.get("misconceptions", []),
         "evaluation_mode": (ev.get("evaluation") or {}).get("mode"),
         "integrity": ev.get("integrity"),
+        "rubric": ev.get("rubric"),
+        "hint_penalty": ev.get("hint_penalty"),
         "evaluation": ev,
         "response_seconds": a.response_seconds,
         "answered_at": a.answered_at,
@@ -30,9 +40,11 @@ def answer_dict(question: Question) -> dict | None:
 
 def question_dict(q: Question, *, include_trace: bool = True, reveal: bool | None = None) -> dict:
     """``reveal`` controls the answer key; by default it is shown only once the
-    question is closed (answered or skipped)."""
+    question is closed (answered or skipped), and in assessment mode only once
+    the interview is completed."""
+    hidden = results_hidden(q.session) if reveal is None else not reveal
     if reveal is None:
-        reveal = q.status != QuestionStatus.ASKED
+        reveal = q.status != QuestionStatus.ASKED and not hidden
     return {
         "id": q.id,
         "position": q.position,
@@ -49,8 +61,9 @@ def question_dict(q: Question, *, include_trace: bool = True, reveal: bool | Non
         "status": q.status,
         "asked_at": q.asked_at,
         "expected_points": q.expected_points if reveal else None,
-        "answer": answer_dict(q),
-        "trace": q.trace if include_trace else None,
+        "hint": ((q.trace or {}).get("hint") or {}).get("hint"),
+        "answer": answer_dict(q, hidden=hidden),
+        "trace": q.trace if include_trace and not hidden else None,
     }
 
 
@@ -62,6 +75,7 @@ def session_summary(s: InterviewSession) -> dict:
         "role_id": s.role_id,
         "role_title": role.title if role else s.role_id,
         "status": s.status,
+        "mode": s.mode or "practice",
         "created_at": s.created_at,
         "updated_at": s.updated_at,
         "completed_at": s.completed_at,

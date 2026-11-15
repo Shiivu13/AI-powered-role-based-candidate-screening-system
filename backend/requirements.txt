@@ -19,3 +19,6 @@ joblib==1.6.0
 
 # LLM provider
 google-genai==3.3.0
+
+# Session snapshot encryption (Fernet)
+cryptography==50.0.2

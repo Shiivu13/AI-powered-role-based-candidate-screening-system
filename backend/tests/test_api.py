@@ -162,7 +162,7 @@ def test_benchmark_endpoint(client):
         assert "roles" in response.json()
 
 
-def test_session_restores_from_signed_snapshot(client, offline_llm, resume_text):
+def test_session_restores_from_encrypted_snapshot(client, offline_llm, resume_text):
     from app.db import SessionLocal
     from app.models import InterviewSession
 
@@ -231,5 +231,41 @@ def test_restore_and_replay_in_one_request(client, offline_llm, resume_text):
     assert got.status_code == 200 and got.json()["id"] == sid
 
     bad = client.post(f"/api/sessions/{sid}", headers={"X-Session-Restore": "1", "X-Original-Method": "GET"},
-                      json={"snapshot": dict(snap, sig="0" * 64), "body": None})
+                      json={"snapshot": dict(snap, body=snap["body"][:-8] + "AAAAAAAA"), "body": None})
     assert bad.status_code == 422
+
+
+def test_assessment_mode_hides_results_until_completion(client, offline_llm, resume_text):
+    sid = _create(client, resume_text, mode="assessment").json()["id"]
+    q = client.post(f"/api/sessions/{sid}/questions/next").json()["question"]
+    assert q["trace"] is None and q["expected_points"] is None  # no source passages to peek at
+    body = client.post(f"/api/sessions/{sid}/questions/{q['id']}/answer", json={"text": "Bagging averages bootstrap models to cut variance."}).json()
+    answer = body["question"]["answer"]
+    assert answer["hidden"] is True and answer["score"] is None and answer.get("feedback") is None
+    assert body["question"]["expected_points"] is None
+    detail = client.get(f"/api/sessions/{sid}").json()
+    assert detail["mode"] == "assessment" and detail["questions"][0]["answer"]["score"] is None
+
+    client.post(f"/api/sessions/{sid}/complete")
+    after = client.get(f"/api/sessions/{sid}").json()["questions"][0]
+    assert after["answer"]["score"] is not None and after["expected_points"] and after["trace"]
+
+
+def test_hint_is_grounded_and_costs_points(client, offline_llm, resume_text):
+    sid = _create(client, resume_text).json()["id"]
+    q = client.post(f"/api/sessions/{sid}/questions/next").json()["question"]
+    hint = client.post(f"/api/sessions/{sid}/questions/{q['id']}/hint").json()
+    assert hint["hint"] and hint["penalty"] == 0.15
+    again = client.post(f"/api/sessions/{sid}/questions/{q['id']}/hint").json()
+    assert again["hint"] == hint["hint"]  # one hint per question, stable
+    answer = client.post(f"/api/sessions/{sid}/questions/{q['id']}/answer",
+                         json={"text": "Gradient boosting fits each new tree to the negative gradient of the loss, for example on residuals."}).json()
+    assert answer["question"]["answer"]["hint_penalty"] == 0.15
+    assert answer["question"]["hint"] == hint["hint"]
+    report = client.post(f"/api/sessions/{sid}/complete").json()["report"]
+    assert report["insights"]["hints_used"] == 1
+    assert set(report["competencies"]) == {"correctness", "depth", "application", "communication"}
+
+
+def test_invalid_mode_rejected(client, resume_text):
+    assert _create(client, resume_text, mode="exam").status_code == 422
