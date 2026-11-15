@@ -1,0 +1,104 @@
+"""Interview session endpoints: one resource, explicit lifecycle actions."""
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from sqlalchemy.orm import Session
+
+from app.db import get_db
+from app.errors import InvalidState
+from app.schemas import AnswerIn, AnswerResult, NextQuestionOut, ReportOut, SessionDetail, SessionSummary
+from app.services import interview_service as svc
+from app.services.serializers import question_dict, session_detail, session_summary
+
+router = APIRouter(prefix="/sessions", tags=["sessions"])
+
+
+@router.post("", response_model=SessionDetail, status_code=status.HTTP_201_CREATED)
+def create_session(
+    role_id: str = Form(...),
+    candidate_name: str = Form(""),
+    num_questions: int | None = Form(None),
+    resume_text: str | None = Form(None),
+    resume: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+):
+    """Stage 1-2: upload resume + choose role -> parse resume, build interview plan."""
+    content = resume.file.read() if resume is not None else None
+    session = svc.create_session(
+        db,
+        candidate_name=candidate_name,
+        role_id=role_id,
+        num_questions=num_questions,
+        resume_filename=resume.filename if resume is not None else None,
+        resume_bytes=content or None,
+        resume_text=resume_text,
+    )
+    return session_detail(session)
+
+
+@router.get("", response_model=list[SessionSummary])
+def list_sessions(limit: int = 50, db: Session = Depends(get_db)):
+    return [session_summary(s) for s in svc.list_sessions(db, min(max(limit, 1), 200))]
+
+
+@router.get("/{session_id}", response_model=SessionDetail)
+def get_session(session_id: str, db: Session = Depends(get_db)):
+    return session_detail(svc.get_session(db, session_id))
+
+
+@router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_session(session_id: str, db: Session = Depends(get_db)):
+    svc.delete_session(db, session_id)
+
+
+@router.post("/{session_id}/questions/next", response_model=NextQuestionOut)
+def next_question(session_id: str, db: Session = Depends(get_db)):
+    """Stage 3-5: retrieve context and generate the next question (idempotent while a
+    question is open: the open question is returned again)."""
+    session = svc.get_session(db, session_id)
+    question = svc.next_question(db, session)
+    return {
+        "done": question is None,
+        "question": question_dict(question) if question else None,
+        "progress": svc.progress(session),
+    }
+
+
+@router.post("/{session_id}/questions/{question_id}/answer", response_model=AnswerResult)
+def answer_question(session_id: str, question_id: str, payload: AnswerIn, db: Session = Depends(get_db)):
+    """Stage 6-7: store and evaluate the answer; adapts difficulty for later questions."""
+    session = svc.get_session(db, session_id)
+    telemetry = payload.telemetry.model_dump() if payload.telemetry else None
+    question = svc.submit_answer(db, session, question_id, payload.text, telemetry)
+    return {
+        "question": question_dict(question),
+        "progress": svc.progress(session),
+        "next_action": "complete" if svc.is_plan_exhausted(session) else "next_question",
+    }
+
+
+@router.post("/{session_id}/questions/{question_id}/skip", response_model=AnswerResult)
+def skip_question(session_id: str, question_id: str, db: Session = Depends(get_db)):
+    session = svc.get_session(db, session_id)
+    question = svc.skip_question(db, session, question_id)
+    return {
+        "question": question_dict(question),
+        "progress": svc.progress(session),
+        "next_action": "complete" if svc.is_plan_exhausted(session) else "next_question",
+    }
+
+
+@router.post("/{session_id}/complete", response_model=ReportOut)
+def complete_session(session_id: str, db: Session = Depends(get_db)):
+    """Stage 8: close the interview and generate the structured report."""
+    session = svc.get_session(db, session_id)
+    report = svc.complete_session(db, session)
+    return {"session_id": session.id, "created_at": report.created_at, "report": report.data}
+
+
+@router.get("/{session_id}/report", response_model=ReportOut)
+def get_report(session_id: str, db: Session = Depends(get_db)):
+    session = svc.get_session(db, session_id)
+    if session.report is None:
+        raise InvalidState("The interview has not been completed yet")
+    return {"session_id": session.id, "created_at": session.report.created_at, "report": session.report.data}
