@@ -1,0 +1,21 @@
+# API
+fastapi==0.163.1
+uvicorn[standard]==0.54.0
+python-multipart==0.0.33
+pydantic==2.14.3
+pydantic-settings==2.16.3
+python-dotenv==1.2.4
+
+# Persistence
+SQLAlchemy==2.1.8
+
+# RAG / ML
+pypdf==7.1.0
+chromadb==1.5.9
+scikit-learn==1.9.1
+rank-bm25==0.2.2
+numpy==2.5.4
+joblib==1.6.0
+
+# LLM provider
+google-genai==3.3.0
