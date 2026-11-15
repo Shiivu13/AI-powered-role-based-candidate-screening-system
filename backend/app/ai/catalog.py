@@ -137,7 +137,7 @@ TOPICS: dict[str, Topic] = {
             "ensembles",
             "Ensemble methods",
             "Bagging, boosting, random forests and gradient boosting.",
-            ("ensemble", "random forest", "xgboost", "lightgbm", "catboost", "boosting", "bagging", "adaboost", "gradient boosting", "stacking"),
+            ("ensemble", "random forest", "xgboost", "lightgbm", "catboost", "boosting", "boosted", "bagging", "adaboost", "gradient boosting", "stacking"),
             ("bagging bootstrap aggregation random forest", "boosting adaboost weak learners", "gradient boosted trees ensemble"),
         ),
         Topic(

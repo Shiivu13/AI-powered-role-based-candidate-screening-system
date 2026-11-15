@@ -300,3 +300,47 @@ class HybridRetriever:
             "chunks_agreed_by_both_retrievers": both,
             "books": sorted({c.book_title for c in chunks}),
         }
+
+
+class MultiRetriever:
+    """Retrieval across several role collections, for custom roles built from a
+    job description. Each collection is searched with the same hybrid pipeline;
+    results are merged by their RRF score (the same formula in every
+    collection), de-duplicated and cut to ``top_k``."""
+
+    def __init__(self, role_ids: list[str]):
+        self.role_ids = role_ids
+        self.parts = [HybridRetriever(r) for r in role_ids]
+
+    def is_ready(self) -> bool:
+        return any(p.is_ready() for p in self.parts)
+
+    def retrieve(self, queries: list[str], *, top_k: int | None = None, exclude_ids: set[str] | None = None,
+                 focus_terms: list[str] | None = None, mode: str = "hybrid", mmr_lambda: float | None = None) -> RetrievalResult:
+        top_k = top_k or get_settings().retrieval_top_k
+        results = [
+            p.retrieve(queries, top_k=top_k, exclude_ids=exclude_ids, focus_terms=focus_terms, mode=mode, mmr_lambda=mmr_lambda)
+            for p in self.parts
+            if p.is_ready()
+        ]
+        merged: dict[str, RetrievedChunk] = {}
+        for result in results:
+            for chunk in result.chunks:
+                if chunk.id not in merged or chunk.rrf_score > merged[chunk.id].rrf_score:
+                    merged[chunk.id] = chunk
+        # Best first, but at most half the context from any one book, so a custom
+        # role's questions draw on every relevant knowledge base.
+        per_book_cap = max(1, (top_k + 1) // 2)
+        chunks: list[RetrievedChunk] = []
+        overflow: list[RetrievedChunk] = []
+        counts: dict[str, int] = {}
+        for chunk in sorted(merged.values(), key=lambda c: c.rrf_score, reverse=True):
+            if counts.get(chunk.book_id, 0) < per_book_cap:
+                chunks.append(chunk)
+                counts[chunk.book_id] = counts.get(chunk.book_id, 0) + 1
+            else:
+                overflow.append(chunk)
+        chunks = (chunks + overflow)[:top_k]
+        diagnostics = HybridRetriever._diagnostics(chunks, focus_terms, sum(r.diagnostics.get("candidate_pool", 0) for r in results))
+        diagnostics["collections"] = self.role_ids
+        return RetrievalResult(results[0].queries if results else queries, chunks, diagnostics)

@@ -34,7 +34,8 @@ def _load(db: Session, session_id: str, client_version: int | None):
 
 @router.post("", response_model=SessionDetail, status_code=status.HTTP_201_CREATED)
 def create_session(
-    role_id: str = Form(...),
+    role_id: str = Form(""),
+    job_description: str | None = Form(None),
     candidate_name: str = Form(""),
     num_questions: int | None = Form(None),
     mode: str = Form("practice"),
@@ -53,6 +54,7 @@ def create_session(
         resume_bytes=content or None,
         resume_text=resume_text,
         mode=mode,
+        job_description=job_description,
     )
     return {**session_detail(session), "snapshot": export_snapshot(session)}
 

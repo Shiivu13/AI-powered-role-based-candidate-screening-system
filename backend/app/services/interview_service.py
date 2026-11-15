@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.answer_evaluator import evaluate_answer
 from app.ai.catalog import Role, get_role
+from app.ai.role_fit import is_custom, looks_like_job_description, role_from_job_description, role_from_spec, role_to_spec
 from app.ai.integrity import assess as assess_integrity
 from app.ai.planner import DIFFICULTY_LABELS, build_plan
 from app.ai.question_generator import generate_follow_up, generate_hint, generate_question
@@ -26,7 +27,7 @@ from app.ai.resume_parser import extract_resume_text, parse_resume
 from app.config import get_settings
 from app.errors import InvalidState, KnowledgeBaseUnavailable, NotFound, ValidationFailed
 from app.models import Answer, InterviewSession, Question, QuestionStatus, Report, SessionStatus
-from app.rag.retriever import HybridRetriever, RetrievalResult, RetrievedChunk
+from app.rag.retriever import HybridRetriever, MultiRetriever, RetrievalResult, RetrievedChunk
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,18 @@ def _role_or_error(role_id: str) -> Role:
     if role is None:
         raise ValidationFailed(f"Unknown role '{role_id}'", details={"role_id": role_id})
     return role
+
+
+def role_for_session(session: InterviewSession) -> Role:
+    if session.role_spec:
+        return role_from_spec(session.role_spec)
+    return _role_or_error(session.role_id)
+
+
+def retriever_for(role: Role):
+    if is_custom(role):
+        return MultiRetriever(list(role.extra.get("kb_roles", [])))
+    return HybridRetriever(role.id)
 
 
 def _aware(dt: datetime) -> datetime:
@@ -109,9 +122,19 @@ def create_session(
     resume_bytes: bytes | None,
     resume_text: str | None,
     mode: str = "practice",
+    job_description: str | None = None,
 ) -> InterviewSession:
     settings = get_settings()
-    role = _role_or_error(role_id)
+    role_spec = None
+    if job_description and job_description.strip():
+        if not looks_like_job_description(job_description):
+            raise ValidationFailed("The job description is too short (at least 25 words)")
+        role, _ = role_from_job_description(job_description)
+        role_spec = role_to_spec(role)
+    elif role_id:
+        role = _role_or_error(role_id)
+    else:
+        raise ValidationFailed("Choose a role or paste a job description")
     if mode not in MODES:
         raise ValidationFailed(f"mode must be one of {', '.join(MODES)}")
 
@@ -133,7 +156,7 @@ def create_session(
     if len(text) < settings.min_resume_chars:
         raise ValidationFailed("The resume is too short to analyse", details={"chars": len(text)})
 
-    if not HybridRetriever(role.id).is_ready():
+    if not retriever_for(role).is_ready():
         raise KnowledgeBaseUnavailable(
             f"The knowledge base for '{role.title}' has not been ingested. Run `python -m scripts.ingest_kb`."
         )
@@ -151,6 +174,7 @@ def create_session(
         plan=[p.to_dict() for p in plan],
         num_questions=num_questions,
         mode=mode,
+        role_spec=role_spec,
     )
     db.add(session)
     db.commit()
@@ -226,8 +250,8 @@ def next_question(db: Session, session: InterviewSession) -> Question | None:
     if open_q is not None:
         return open_q
 
-    role = _role_or_error(session.role_id)
-    retriever = HybridRetriever(role.id)
+    role = role_for_session(session)
+    retriever = retriever_for(role)
     previous = [q.text for q in session.questions]
     position = len(session.questions) + 1
 
@@ -373,7 +397,7 @@ def complete_session(db: Session, session: InterviewSession) -> Report:
             q.status = QuestionStatus.SKIPPED
     from app.services.serializers import question_dict  # local import avoids a cycle
 
-    role = _role_or_error(session.role_id)
+    role = role_for_session(session)
     data = build_report(
         role=role,
         profile=session.profile,

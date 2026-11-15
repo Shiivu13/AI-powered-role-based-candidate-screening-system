@@ -61,9 +61,14 @@ def _migrate() -> None:
     from sqlalchemy import inspect, text
 
     columns = {c["name"] for c in inspect(engine).get_columns("interview_sessions")}
-    if "mode" not in columns:
-        with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN mode VARCHAR(20) DEFAULT 'practice'"))
+    added = {
+        "mode": "ALTER TABLE interview_sessions ADD COLUMN mode VARCHAR(20) DEFAULT 'practice'",
+        "role_spec": "ALTER TABLE interview_sessions ADD COLUMN role_spec JSON",
+    }
+    for column, ddl in added.items():
+        if column not in columns:
+            with engine.begin() as conn:
+                conn.execute(text(ddl))
 
 
 def get_db() -> Iterator[Session]:

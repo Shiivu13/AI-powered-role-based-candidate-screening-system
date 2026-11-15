@@ -110,6 +110,7 @@ class SessionSummary(BaseModel):
     role_title: str
     status: Literal["ready", "in_progress", "completed"]
     mode: Literal["practice", "assessment"] = "practice"
+    custom_role: bool = False
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None = None

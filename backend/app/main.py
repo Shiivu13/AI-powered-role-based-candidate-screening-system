@@ -9,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import catalog, sessions
+from app.api import analysis, catalog, sessions
 from app.config import get_settings
 from app.db import init_db
 from app.errors import AppError
@@ -70,6 +70,7 @@ def create_app() -> FastAPI:
 
     app.include_router(catalog.router, prefix="/api")
     app.include_router(sessions.router, prefix="/api")
+    app.include_router(analysis.router, prefix="/api")
     return app
 
 

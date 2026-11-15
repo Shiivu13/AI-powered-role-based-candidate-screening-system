@@ -4,7 +4,7 @@ from __future__ import annotations
 from app.ai.catalog import get_role
 from app.ai.planner import DIFFICULTY_LABELS
 from app.models import InterviewSession, Question, QuestionStatus
-from app.services.interview_service import pending_question, progress
+from app.services.interview_service import pending_question, progress, role_for_session
 
 
 def results_hidden(session: InterviewSession) -> bool:
@@ -68,12 +68,16 @@ def question_dict(q: Question, *, include_trace: bool = True, reveal: bool | Non
 
 
 def session_summary(s: InterviewSession) -> dict:
-    role = get_role(s.role_id)
+    try:
+        role = role_for_session(s)
+    except Exception:  # unknown legacy role id
+        role = get_role(s.role_id)
     return {
         "id": s.id,
         "candidate_name": s.candidate_name,
         "role_id": s.role_id,
         "role_title": role.title if role else s.role_id,
+        "custom_role": bool(s.role_spec),
         "status": s.status,
         "mode": s.mode or "practice",
         "created_at": s.created_at,

@@ -51,6 +51,8 @@ class InterviewSession(Base):
     status: Mapped[str] = mapped_column(String(20), default=SessionStatus.READY, index=True)
     # "practice": feedback after every answer; "assessment": results only in the final report
     mode: Mapped[str] = mapped_column(String(20), default="practice")
+    # Set for custom roles built from a job description (see ai/role_fit.py).
+    role_spec: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     resume_filename: Mapped[str | None] = mapped_column(String(255))
     resume_text: Mapped[str] = mapped_column(Text)
     profile: Mapped[dict] = mapped_column(JSON, default=dict)

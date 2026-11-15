@@ -269,3 +269,49 @@ def test_hint_is_grounded_and_costs_points(client, offline_llm, resume_text):
 
 def test_invalid_mode_rejected(client, resume_text):
     assert _create(client, resume_text, mode="exam").status_code == 422
+
+
+JD = """Senior Machine Learning Engineer, Fraud Detection.
+You will build gradient boosting and random forest models (XGBoost, LightGBM) to detect fraud in card transactions,
+design cross-validation and A/B tests, monitor precision and recall in production, handle class imbalance and
+feature engineering with pandas and SQL, and explain model decisions to stakeholders. Experience with neural networks
+is a plus. You care about overfitting, regularization and robust evaluation."""
+
+
+def test_resume_fit_recommends_a_role(client, offline_llm, resume_text):
+    data = client.post("/api/resume/analyze", data={"resume_text": resume_text}).json()
+    fits = data["role_fit"]
+    assert len(fits) == 3 and fits[0]["recommended"] and fits[0]["fit"] >= fits[-1]["fit"]
+    assert any(m["topic"] == "Ensemble methods" for m in fits[0]["matched_topics"])
+    assert data["profile"]["name"] == "Priya Sharma"
+
+
+def test_job_description_builds_a_custom_role(client, offline_llm):
+    preview = client.post("/api/roles/from-job-description", json={"text": JD}).json()
+    names = [t["name"] for t in preview["topics"]]
+    assert "Ensemble methods" in names and "Model evaluation & validation" in names
+    assert preview["knowledge_bases"] and preview["role_id"].startswith("custom_")
+    short = client.post("/api/roles/from-job-description", json={"text": "ML engineer needed for a fintech startup now"})
+    assert short.status_code == 422
+
+
+def test_interview_for_a_custom_role(client, offline_llm, resume_text):
+    created = client.post("/api/sessions", data={"job_description": JD, "num_questions": "3"},
+                          files={"resume": ("cv.txt", resume_text.encode(), "text/plain")})
+    assert created.status_code == 201, created.text
+    session = created.json()
+    assert session["custom_role"] is True and session["role_id"].startswith("custom_")
+    topics = {p["topic_id"] for p in session["plan"]}
+    assert topics & {"ensembles", "evaluation", "decision_trees", "feature_engineering"}
+    q = client.post(f"/api/sessions/{session['id']}/questions/next").json()["question"]
+    assert "collections" in q["trace"]["retrieval"]["diagnostics"]
+    client.post(f"/api/sessions/{session['id']}/questions/{q['id']}/answer", json={"text": "Boosting fits trees to residuals."})
+    report = client.post(f"/api/sessions/{session['id']}/complete").json()["report"]
+    assert report["role_title"] == session["role_title"]
+    # also survives the serverless restore path
+    assert client.get(f"/api/sessions/{session['id']}/snapshot").json()["summary"]["role_title"]
+
+
+def test_session_needs_role_or_job_description(client, resume_text):
+    response = client.post("/api/sessions", data={"num_questions": "3"}, files={"resume": ("cv.txt", resume_text.encode(), "text/plain")})
+    assert response.status_code == 422

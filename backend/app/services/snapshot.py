@@ -78,6 +78,7 @@ def _summary(session: InterviewSession) -> dict:
         "id": session.id,
         "candidate_name": session.candidate_name,
         "role_id": session.role_id,
+        "role_title": (session.role_spec or {}).get("title"),
         "status": session.status,
         "mode": session.mode,
         "created_at": session.created_at.isoformat() if session.created_at else None,
