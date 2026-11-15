@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import type { Role } from "../api/types";
+import type { JobRolePreview, Role, RoleFit } from "../api/types";
 import { BookIcon, FileIcon, UploadIcon } from "../components/icons";
 import { Card, Chip, ErrorBanner, Spinner, Stepper } from "../components/ui";
 
@@ -26,7 +26,56 @@ export default function SetupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [fits, setFits] = useState<Record<string, RoleFit>>({});
+  const [analyzing, setAnalyzing] = useState(false);
+  const [roleTouched, setRoleTouched] = useState(false);
+  const [jd, setJd] = useState("");
+  const [jdPreview, setJdPreview] = useState<JobRolePreview | null>(null);
+  const [jdBusy, setJdBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isCustom = roleId === "custom";
+
+  // Score the resume against every role as soon as it is provided, and
+  // pre-select the best fit unless the user already picked a role.
+  useEffect(() => {
+    const source = mode === "file" ? file : text.trim().length >= 80 ? text : null;
+    if (!source) {
+      setFits({});
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setAnalyzing(true);
+      try {
+        const res = await api.analyzeResume(mode === "file" ? file : null, mode === "text" ? text : undefined);
+        if (cancelled) return;
+        setFits(Object.fromEntries(res.role_fit.map((f) => [f.role_id, f])));
+        const best = res.role_fit.find((f) => f.recommended);
+        if (best && !roleTouched) setRoleId(best.role_id);
+      } catch {
+        /* the fit is a convenience; creating the session reports real errors */
+      } finally {
+        if (!cancelled) setAnalyzing(false);
+      }
+    }, mode === "file" ? 0 : 800);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [file, text, mode, roleTouched]);
+
+  const jdWords = jd.trim() ? jd.trim().split(/\s+/).length : 0;
+  const previewJd = async () => {
+    setJdBusy(true);
+    setError(null);
+    try {
+      setJdPreview(await api.roleFromJobDescription(jd));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setJdBusy(false);
+    }
+  };
 
   useEffect(() => {
     api
@@ -61,7 +110,8 @@ export default function SetupPage() {
 
   const selectedRole = roles?.find((r) => r.id === roleId);
   const hasResume = mode === "file" ? !!file : text.trim().length >= 80;
-  const canSubmit = !!selectedRole?.knowledge_base_ready && hasResume && !submitting;
+  const roleOk = isCustom ? jdWords >= 25 : !!selectedRole?.knowledge_base_ready;
+  const canSubmit = roleOk && hasResume && !submitting;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -75,6 +125,7 @@ export default function SetupPage() {
         candidateName: name,
         numQuestions,
         mode: interviewMode,
+        jobDescription: isCustom ? jd : undefined,
         resumeFile: mode === "file" ? file : null,
         resumeText: mode === "text" ? text : undefined,
       });
@@ -91,15 +142,16 @@ export default function SetupPage() {
       <div className="hero">
         <h1>Role-based technical screening</h1>
         <p className="muted">
-          Upload a resume and pick a role. Every question is generated live from the role's reference textbooks and
-          tailored to the candidate's background, with page-level citations for each one.
+          Upload a resume and pick a role, or paste any job description. The resume is scored against every role, and
+          every question is generated live from the reference textbooks, tailored to the candidate, with page-level
+          citations.
         </p>
       </div>
 
       {error && <ErrorBanner message={error} onClose={() => setError(null)} />}
 
       <form onSubmit={onSubmit} className="setup-grid">
-        <Card title="1. Choose the target role">
+        <Card title="1. Choose the target role" actions={analyzing ? <Spinner label="Matching resume…" /> : undefined}>
           {!roles ? (
             <Spinner label="Loading roles…" />
           ) : (
@@ -112,10 +164,34 @@ export default function SetupPage() {
                     value={r.id}
                     checked={roleId === r.id}
                     disabled={!r.knowledge_base_ready}
-                    onChange={() => setRoleId(r.id)}
+                    onChange={() => {
+                      setRoleTouched(true);
+                      setRoleId(r.id);
+                    }}
                   />
-                  <div>
-                    <div className="role-title">{r.title}</div>
+                  <div className="grow">
+                    <div className="row between">
+                      <div className="role-title">{r.title}</div>
+                      {fits[r.id] && (
+                        <Chip tone={fits[r.id].recommended ? "green" : "neutral"} title="How well the resume covers this role's topics">
+                          {fits[r.id].recommended ? "Best fit · " : ""}
+                          {fits[r.id].fit}% match
+                        </Chip>
+                      )}
+                    </div>
+                    {fits[r.id] && (
+                      <div className="fit">
+                        <div className="bar">
+                          <div className={`bar-fill fill-${fits[r.id].fit >= 50 ? "green" : fits[r.id].fit >= 30 ? "amber" : "red"}`} style={{ width: `${Math.max(3, fits[r.id].fit)}%` }} />
+                        </div>
+                        <div className="small muted">
+                          {fits[r.id].matched_topics.length
+                            ? `Resume covers: ${fits[r.id].matched_topics.slice(0, 4).map((m) => m.topic).join(", ")}`
+                            : "No topics of this role found on the resume"}
+                          {fits[r.id].missing_core_topics.length > 0 && ` · gaps: ${fits[r.id].missing_core_topics.slice(0, 2).join(", ")}`}
+                        </div>
+                      </div>
+                    )}
                     <div className="muted small">{r.description}</div>
                     <div className="book-list">
                       {r.books.map((b) => (
@@ -133,6 +209,59 @@ export default function SetupPage() {
                   </div>
                 </label>
               ))}
+              <label className={`role-card ${isCustom ? "selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="custom"
+                  checked={isCustom}
+                  onChange={() => {
+                    setRoleTouched(true);
+                    setRoleId("custom");
+                  }}
+                />
+                <div className="grow">
+                  <div className="role-title">Custom role from a job description</div>
+                  <div className="muted small">
+                    Paste any JD. The topics it asks for are extracted and the interview is grounded in every knowledge base that
+                    covers them.
+                  </div>
+                  {isCustom && (
+                    <div className="jd">
+                      <textarea
+                        rows={6}
+                        placeholder="Paste the job description (at least 25 words)…"
+                        value={jd}
+                        onChange={(e) => {
+                          setJd(e.target.value);
+                          setJdPreview(null);
+                        }}
+                      />
+                      <div className="row between">
+                        <span className="small muted">{jdWords} words</span>
+                        <button type="button" className="btn btn-small" onClick={previewJd} disabled={jdWords < 25 || jdBusy}>
+                          {jdBusy ? <Spinner label="Reading JD…" /> : "Preview role"}
+                        </button>
+                      </div>
+                      {jdPreview && (
+                        <div className="jd-preview">
+                          <strong>{jdPreview.title}</strong>
+                          <div className="chips">
+                            {jdPreview.topics.map((t) => (
+                              <Chip key={t.id} tone="blue" title={t.evidence.join(", ")}>
+                                {t.name}
+                              </Chip>
+                            ))}
+                          </div>
+                          <div className="small muted">
+                            Knowledge bases: {jdPreview.knowledge_bases.map((k) => k.title).join(" + ")}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </label>
             </div>
           )}
         </Card>

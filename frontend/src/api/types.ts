@@ -12,6 +12,7 @@ export interface SnapshotSummary {
   id: string;
   candidate_name: string;
   role_id: string;
+  role_title?: string | null;
   status: "ready" | "in_progress" | "completed";
   mode: "practice" | "assessment";
   created_at: string;
@@ -178,6 +179,7 @@ export interface SessionSummary {
   role_title: string;
   status: "ready" | "in_progress" | "completed";
   mode?: "practice" | "assessment";
+  custom_role?: boolean;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -300,4 +302,27 @@ export interface Benchmark {
   generated_at: string;
   roles: Record<string, { queries: number; chunks: number; results: Record<string, MetricRow> }>;
   chunk_size_ablation: { role?: string; results?: Record<string, MetricRow> };
+}
+
+export interface RoleFit {
+  role_id: string;
+  title: string;
+  fit: number;
+  matched_topics: { topic: string; evidence: string[] }[];
+  missing_core_topics: string[];
+  recommended?: boolean;
+}
+
+export interface ResumeAnalysis {
+  profile: { name: string | null; headline: string | null; seniority: string; years_experience: number | null; skills: string[]; technologies: string[]; domains: string[] };
+  role_fit: RoleFit[];
+}
+
+export interface JobRolePreview {
+  role_id: string;
+  title: string;
+  topics: { id: string; name: string; evidence: string[] }[];
+  knowledge_bases: { role_id: string; title: string }[];
+  required_skills: string[];
+  extraction: string;
 }

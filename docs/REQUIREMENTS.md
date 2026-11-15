@@ -1,13 +1,13 @@
 # Requirements coverage
 
-Every requirement in the assignment brief, where it is implemented, and how it is verified. "Tests" refers to `backend/tests/` (47 tests, `make test`).
+Every requirement in the assignment brief, where it is implemented, and how it is verified. "Tests" refers to `backend/tests/` (51 tests, `make test`).
 
 ## 3. Expected system flow
 
 | Requirement | Implementation | Verified by |
 |---|---|---|
 | Upload resume (PDF or text) | `frontend/src/pages/SetupPage.tsx` (drag-and-drop or paste); `backend/app/ai/resume_parser.py::extract_resume_text`. Scanned PDFs, wrong types, files over 4 MB and too-short text are rejected with clear errors | `test_create_session_validation` |
-| Select target role | Role cards with books, chunk counts and readiness; `GET /api/roles` | `test_health_and_roles` |
+| Select target role | Role cards with books, chunk counts and readiness, and a % fit computed from the resume (best fit pre-selected); or a custom role built from a pasted job description | `test_health_and_roles`, `test_resume_fit_recommends_a_role`, `test_job_description_builds_a_custom_role`, `test_interview_for_a_custom_role` |
 | Parse resume; extract skills, technologies, domain exposure | Taxonomy matcher (54 skills, word-boundary aliases, mention counts), date-range experience estimate, seniority; LLM extraction (projects, headline, extra skills) merged on top | `test_skill_matching_is_word_bounded`, `test_years_*`, `test_parse_resume_offline`, `test_parse_resume_merges_llm_output` |
 | Context construction: meaningful queries, topics to evaluate | `backend/app/ai/planner.py`: per-topic resume affinity, resume-anchored vs core-gap slots, 3 queries per topic (textbook view, candidate vocabulary, difficulty angle) | `test_plan_prioritises_resume_then_probes_gaps` |
 | Query a role-specific knowledge base; most relevant chunks; grounded context | `backend/app/rag/retriever.py`: dense + BM25, RRF, MMR, session de-duplication, grounding diagnostics stored per question | `test_hybrid_retrieval_is_relevant_and_traceable`, `test_retrieval_excludes_used_chunks`, retrieval benchmark |
@@ -61,7 +61,7 @@ Every requirement in the assignment brief, where it is implemented, and how it i
 
 ## 8. Creativity and extensions
 
-Retrieval benchmark and Retrieval Lab · rubric scoring with competency profile · grounded hints with penalty · practice vs assessment mode (enforced server-side) · voice interview mode (questions read aloud, spoken answers) · answer integrity signals · candidate comparison view · encrypted self-healing sessions · one-deployment Vercel setup with no configuration needed · offline mode with graceful LLM fallback.
+Resume-to-role fit and custom roles from job descriptions · retrieval benchmark and Retrieval Lab · rubric scoring with competency profile · grounded hints with penalty · practice vs assessment mode (enforced server-side) · voice interview mode (questions read aloud, spoken answers) · answer integrity signals · candidate comparison view · encrypted self-healing sessions · one-deployment Vercel setup with no configuration needed · offline mode with graceful LLM fallback.
 
 ## 9. Knowledge base resources
 

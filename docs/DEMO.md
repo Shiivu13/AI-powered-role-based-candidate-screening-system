@@ -5,7 +5,8 @@ Record on the live site (https://ai-powered-role-based-candidate-scr-sage.vercel
 | # | Time | Show | Say (the point to land) |
 |---|---|---|---|
 | 1 | 0:00 | Landing page, role cards | "Three roles, each with its own knowledge base built from the assignment's books. The chunk counts show what is indexed." |
-| 2 | 0:30 | Upload the resume, pick AI/ML Engineer, choose **Practice**, 4 questions | "Practice mode shows feedback after every answer. Assessment mode hides it until the report, and the server enforces that." |
+| 2 | 0:30 | Upload the resume and watch the % match appear on every role card | "The resume is scored against each role the moment it is uploaded. The best fit is pre-selected, and each card shows covered topics and gaps." |
+| 2b | 0:50 | Select **Custom role from a job description**, paste a JD, click **Preview role** | "Any job description becomes an interview: its topics are extracted and the right knowledge bases are combined." Then go back to a predefined role (or keep the custom one), choose **Practice**, 4 questions |
 | 3 | 1:00 | Profile & plan screen | "Skills and projects come from the resume. The plan opens on the candidate's strongest topic, then alternates resume claims with core gaps. Each item says why it was chosen and which queries it will run." |
 | 4 | 1:45 | Question 1, open **Why this question?** | "Here is the RAG trace: three queries, hybrid dense + BM25 retrieval, the four passages with book, section and page, and which of them the question actually used." |
 | 5 | 2:30 | Turn on **Voice mode**; the question is read aloud, then answer by speaking | "Hands-free interview: speech synthesis for questions, speech recognition for answers." |

@@ -23,7 +23,7 @@ make install   # virtualenv, backend + frontend dependencies
 make kb        # optional: re-download the books and rebuild the knowledge base (~1 min)
 make api       # http://localhost:8000   (API docs at /docs)
 make web       # http://localhost:5173
-make test      # 47 backend tests + frontend type-check and build
+make test      # 51 backend tests + frontend type-check and build
 ```
 
 A compact, pre-built knowledge base is committed in `backend/kb/` (14 MB, NumPy only), so a fresh clone works without `make kb`. `make kb` rebuilds the full ChromaDB pipeline from the books and re-exports `backend/kb/`.
@@ -68,6 +68,10 @@ One book, Burkov's *Hundred-Page ML Book*, is hosted on a server whose TLS certi
    - Full transcript with traces; JSON export.
 
 ## Things I added beyond the brief
+
+**Role fit and custom roles.** The three predefined roles follow the brief's three book groups. Two additions on top:
+- **Role recommendation.** As soon as a resume is uploaded, it is scored against every role using the same topic-affinity measure the planner uses. Each role card shows a % match, the topics the resume covers, and the core topics it does not. The best fit is pre-selected.
+- **A custom role from any job description.** Paste a JD and the topics it asks for are extracted (keyword matching, plus Gemini's reading of required skills when available). The system then picks the knowledge bases that cover those topics and builds a role on the fly. Retrieval for that role searches every chosen collection, merges the results by RRF score, and keeps at most half the context from any one book. The role definition is stored with the session, so it survives reloads and serverless restores. This mirrors how real interviews are built: from a JD, not a fixed menu.
 
 **Retrieval benchmark** (`scripts/benchmark_retrieval.py`, results in [`docs/benchmarks/retrieval.md`](docs/benchmarks/retrieval.md) and in the app's Retrieval Lab). There is no labelled data for these books, so I used their structure:
 - the title of a numbered section is the query;
@@ -153,7 +157,7 @@ backend/app/
   rag/            loaders, chunking, embeddings, vector_store, retriever, ingest, evaluation
 backend/kb/       compact NumPy-only knowledge base (committed; used on Vercel and by fresh clones)
 backend/scripts/  download_kb, ingest_kb, export_kb, benchmark_retrieval
-backend/tests/    47 tests: synthetic mini-textbook + fake LLM, no network or books needed
+backend/tests/    51 tests: synthetic mini-textbook + fake LLM, no network or books needed
 frontend/scripts/vercel-build.sh   Build Output API bundle: static site + Python function
 frontend/src/     pages (Setup, Session, History, Lab), components, state (interview reducer,
                   telemetry, speech)
@@ -164,7 +168,9 @@ docs/benchmarks/  retrieval benchmark output
 
 | | |
 |---|---|
-| `POST /api/sessions` | multipart: `role_id`, `resume` file or `resume_text`, optional `candidate_name`, `num_questions`, `mode` (`practice`/`assessment`) |
+| `POST /api/sessions` | multipart: `role_id` **or** `job_description`, `resume` file or `resume_text`, optional `candidate_name`, `num_questions`, `mode` (`practice`/`assessment`) |
+| `POST /api/resume/analyze` | resume → profile + % fit against every role |
+| `POST /api/roles/from-job-description` | `{text}` → preview of the custom role (title, topics, knowledge bases) |
 | `POST /api/sessions/{id}/questions/next` | next question; returns the open one again if there is one (safe to retry) |
 | `POST /api/sessions/{id}/questions/{qid}/answer` | `{text, telemetry?}`; returns the evaluation and integrity signals |
 | `POST /api/sessions/{id}/questions/{qid}/hint` | one grounded hint (costs 15% of that question's score) |

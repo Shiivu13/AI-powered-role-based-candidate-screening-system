@@ -339,3 +339,10 @@ code { font-family: ui-monospace, Menlo, monospace; font-size: 0.85em; backgroun
 .heat-red { background: var(--red-bg); color: var(--red); }
 .table td.heat-cell { padding: 0.3rem; }
 .select { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 0.6rem; }
+
+/* role fit + custom role */
+.fit { margin: 0.35rem 0 0.2rem; }
+.fit .bar { margin: 0 0 0.25rem; }
+.jd { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.jd textarea { min-height: 120px; }
+.jd-preview { border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.7rem; display: flex; flex-direction: column; gap: 0.35rem; background: var(--surface-2); }

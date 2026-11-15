@@ -4,6 +4,8 @@ import type {
   AnswerResponse,
   Benchmark,
   HintResponse,
+  JobRolePreview,
+  ResumeAnalysis,
   Health,
   NextQuestionResponse,
   ReportResponse,
@@ -100,12 +102,20 @@ export interface CreateSessionInput {
   candidateName: string;
   numQuestions: number;
   mode: "practice" | "assessment";
+  jobDescription?: string;
   resumeFile?: File | null;
   resumeText?: string;
 }
 
 export const api = {
   health: () => request<Health>("/health"),
+  analyzeResume: (file: File | null, text?: string) => {
+    const form = new FormData();
+    if (file) form.append("resume", file);
+    else if (text) form.append("resume_text", text);
+    return request<ResumeAnalysis>("/resume/analyze", { method: "POST", body: form });
+  },
+  roleFromJobDescription: (text: string) => request<JobRolePreview>("/roles/from-job-description", json({ text })),
   roles: () => request<Role[]>("/roles"),
   /** Server sessions merged with the ones this browser holds snapshots for. */
   listSessions: async (roleTitles: Record<string, string> = {}) => {
@@ -132,7 +142,8 @@ export const api = {
   },
   createSession: (input: CreateSessionInput) => {
     const form = new FormData();
-    form.append("role_id", input.roleId);
+    if (input.jobDescription) form.append("job_description", input.jobDescription);
+    else form.append("role_id", input.roleId);
     form.append("candidate_name", input.candidateName);
     form.append("num_questions", String(input.numQuestions));
     form.append("mode", input.mode);
