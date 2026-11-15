@@ -1,0 +1,229 @@
+{
+  "generated_at": "2026-11-15",
+  "roles": {
+    "ai_ml_engineer": {
+      "queries": 150,
+      "chunks": 1533,
+      "results": {
+        "dense (LSA)": {
+          "hit@1": 0.38,
+          "hit@4": 0.627,
+          "precision@4": 0.313,
+          "mrr@10": 0.5,
+          "ndcg@10": 0.408,
+          "redundancy@4": 0.381
+        },
+        "sparse (BM25)": {
+          "hit@1": 0.347,
+          "hit@4": 0.613,
+          "precision@4": 0.263,
+          "mrr@10": 0.48,
+          "ndcg@10": 0.356,
+          "redundancy@4": 0.296
+        },
+        "hybrid RRF, equal weights": {
+          "hit@1": 0.367,
+          "hit@4": 0.653,
+          "precision@4": 0.295,
+          "mrr@10": 0.505,
+          "ndcg@10": 0.397,
+          "redundancy@4": 0.346
+        },
+        "hybrid RRF, BM25 weight 0.5": {
+          "hit@1": 0.387,
+          "hit@4": 0.647,
+          "precision@4": 0.303,
+          "mrr@10": 0.512,
+          "ndcg@10": 0.406,
+          "redundancy@4": 0.357
+        },
+        "hybrid RRF, BM25 weight 0.3": {
+          "hit@1": 0.393,
+          "hit@4": 0.64,
+          "precision@4": 0.305,
+          "mrr@10": 0.516,
+          "ndcg@10": 0.411,
+          "redundancy@4": 0.364
+        },
+        "hybrid (BM25 0.5) + MMR \u03bb=0.9": {
+          "hit@1": 0.387,
+          "hit@4": 0.66,
+          "precision@4": 0.26,
+          "mrr@10": 0.519,
+          "ndcg@10": 0.375,
+          "redundancy@4": 0.294
+        },
+        "hybrid (BM25 0.5) + MMR \u03bb=0.7": {
+          "hit@1": 0.387,
+          "hit@4": 0.64,
+          "precision@4": 0.182,
+          "mrr@10": 0.513,
+          "ndcg@10": 0.299,
+          "redundancy@4": 0.195
+        }
+      }
+    },
+    "data_scientist": {
+      "queries": 78,
+      "chunks": 1021,
+      "results": {
+        "dense (LSA)": {
+          "hit@1": 0.346,
+          "hit@4": 0.577,
+          "precision@4": 0.224,
+          "mrr@10": 0.468,
+          "ndcg@10": 0.397,
+          "redundancy@4": 0.419
+        },
+        "sparse (BM25)": {
+          "hit@1": 0.333,
+          "hit@4": 0.628,
+          "precision@4": 0.212,
+          "mrr@10": 0.468,
+          "ndcg@10": 0.377,
+          "redundancy@4": 0.357
+        },
+        "hybrid RRF, equal weights": {
+          "hit@1": 0.321,
+          "hit@4": 0.577,
+          "precision@4": 0.224,
+          "mrr@10": 0.462,
+          "ndcg@10": 0.391,
+          "redundancy@4": 0.401
+        },
+        "hybrid RRF, BM25 weight 0.5": {
+          "hit@1": 0.333,
+          "hit@4": 0.577,
+          "precision@4": 0.231,
+          "mrr@10": 0.468,
+          "ndcg@10": 0.398,
+          "redundancy@4": 0.403
+        },
+        "hybrid RRF, BM25 weight 0.3": {
+          "hit@1": 0.333,
+          "hit@4": 0.577,
+          "precision@4": 0.228,
+          "mrr@10": 0.461,
+          "ndcg@10": 0.396,
+          "redundancy@4": 0.404
+        },
+        "hybrid (BM25 0.5) + MMR \u03bb=0.9": {
+          "hit@1": 0.333,
+          "hit@4": 0.564,
+          "precision@4": 0.186,
+          "mrr@10": 0.463,
+          "ndcg@10": 0.37,
+          "redundancy@4": 0.327
+        },
+        "hybrid (BM25 0.5) + MMR \u03bb=0.7": {
+          "hit@1": 0.333,
+          "hit@4": 0.564,
+          "precision@4": 0.154,
+          "mrr@10": 0.439,
+          "ndcg@10": 0.279,
+          "redundancy@4": 0.202
+        }
+      }
+    },
+    "ml_research": {
+      "queries": 43,
+      "chunks": 2585,
+      "results": {
+        "dense (LSA)": {
+          "hit@1": 0.558,
+          "hit@4": 0.837,
+          "precision@4": 0.483,
+          "mrr@10": 0.673,
+          "ndcg@10": 0.428,
+          "redundancy@4": 0.44
+        },
+        "sparse (BM25)": {
+          "hit@1": 0.512,
+          "hit@4": 0.884,
+          "precision@4": 0.419,
+          "mrr@10": 0.662,
+          "ndcg@10": 0.385,
+          "redundancy@4": 0.359
+        },
+        "hybrid RRF, equal weights": {
+          "hit@1": 0.558,
+          "hit@4": 0.884,
+          "precision@4": 0.471,
+          "mrr@10": 0.688,
+          "ndcg@10": 0.417,
+          "redundancy@4": 0.4
+        },
+        "hybrid RRF, BM25 weight 0.5": {
+          "hit@1": 0.558,
+          "hit@4": 0.884,
+          "precision@4": 0.471,
+          "mrr@10": 0.682,
+          "ndcg@10": 0.422,
+          "redundancy@4": 0.418
+        },
+        "hybrid RRF, BM25 weight 0.3": {
+          "hit@1": 0.535,
+          "hit@4": 0.884,
+          "precision@4": 0.471,
+          "mrr@10": 0.669,
+          "ndcg@10": 0.422,
+          "redundancy@4": 0.432
+        },
+        "hybrid (BM25 0.5) + MMR \u03bb=0.9": {
+          "hit@1": 0.558,
+          "hit@4": 0.884,
+          "precision@4": 0.419,
+          "mrr@10": 0.689,
+          "ndcg@10": 0.406,
+          "redundancy@4": 0.363
+        },
+        "hybrid (BM25 0.5) + MMR \u03bb=0.7": {
+          "hit@1": 0.558,
+          "hit@4": 0.837,
+          "precision@4": 0.349,
+          "mrr@10": 0.68,
+          "ndcg@10": 0.332,
+          "redundancy@4": 0.261
+        }
+      }
+    }
+  },
+  "chunk_size_ablation": {
+    "role": "data_scientist",
+    "results": {
+      "500": {
+        "chunks": 1851,
+        "avg_chars": 434,
+        "queries": 52,
+        "hit@1": 0.288,
+        "hit@4": 0.673,
+        "precision@4": 0.245,
+        "mrr@10": 0.454,
+        "ndcg@10": 0.294,
+        "redundancy@4": 0.497
+      },
+      "1000": {
+        "chunks": 1021,
+        "avg_chars": 848,
+        "queries": 52,
+        "hit@1": 0.442,
+        "hit@4": 0.712,
+        "precision@4": 0.303,
+        "mrr@10": 0.571,
+        "ndcg@10": 0.453,
+        "redundancy@4": 0.482
+      },
+      "1500": {
+        "chunks": 713,
+        "avg_chars": 1244,
+        "queries": 52,
+        "hit@1": 0.346,
+        "hit@4": 0.712,
+        "precision@4": 0.264,
+        "mrr@10": 0.523,
+        "ndcg@10": 0.473,
+        "redundancy@4": 0.429
+      }
+    }
+  }
+}
