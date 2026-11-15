@@ -34,10 +34,12 @@ def normalize_text(text: str) -> str:
         text = text.replace(src, dst)
     text = unicodedata.normalize("NFKC", text)
     text = text.replace("­", "")  # soft hyphen
-    # Re-join words hyphenated across line breaks: "learn-\ning" -> "learning"
-    text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
     text = re.sub(r"[ \t ]+", " ", text)
     text = re.sub(r" *\n *", "\n", text)
+    # Re-join words hyphenated across line breaks: "learn-\ning" -> "learning".
+    # Runs after whitespace cleanup: a trailing space ("vari- \nations") used to defeat it.
+    # Lower-case on both sides only, so real compounds ("Bayes-\nOptimal") keep their hyphen.
+    text = re.sub(r"([a-z])-\n([a-z])", r"\1\2", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 

@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 4  # chunks handed to the generator
     # Defaults chosen from docs/benchmarks/retrieval.md (scripts/benchmark_retrieval.py):
     # BM25 at half weight was the most consistent fusion across the three roles.
-    # MMR at 0.9 cuts top-4 redundancy by 15-20% for a similar drop in
+    # MMR at 0.9 cuts top-4 redundancy by 9-14% for a similar drop in
     # precision@4, with hit@4 and MRR flat. That trade is deliberate: four
     # overlapping excerpts of one paragraph make worse question context than
     # four related ones. MMR at 0.7 cost 30-40% of precision@4, too much.

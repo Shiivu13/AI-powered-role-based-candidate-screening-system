@@ -3,63 +3,63 @@
   "roles": {
     "ai_ml_engineer": {
       "queries": 150,
-      "chunks": 1533,
+      "chunks": 1531,
       "results": {
         "dense (LSA)": {
           "hit@1": 0.393,
-          "hit@4": 0.62,
-          "precision@4": 0.315,
-          "mrr@10": 0.501,
-          "ndcg@10": 0.41,
-          "redundancy@4": 0.49
+          "hit@4": 0.64,
+          "precision@4": 0.325,
+          "mrr@10": 0.51,
+          "ndcg@10": 0.424,
+          "redundancy@4": 0.48
         },
         "sparse (BM25)": {
-          "hit@1": 0.347,
-          "hit@4": 0.613,
-          "precision@4": 0.263,
-          "mrr@10": 0.48,
-          "ndcg@10": 0.356,
-          "redundancy@4": 0.353
+          "hit@1": 0.327,
+          "hit@4": 0.627,
+          "precision@4": 0.265,
+          "mrr@10": 0.474,
+          "ndcg@10": 0.358,
+          "redundancy@4": 0.349
         },
         "hybrid RRF, equal weights": {
-          "hit@1": 0.387,
-          "hit@4": 0.653,
-          "precision@4": 0.3,
-          "mrr@10": 0.509,
-          "ndcg@10": 0.398,
-          "redundancy@4": 0.43
+          "hit@1": 0.38,
+          "hit@4": 0.66,
+          "precision@4": 0.295,
+          "mrr@10": 0.512,
+          "ndcg@10": 0.404,
+          "redundancy@4": 0.428
         },
         "hybrid RRF, BM25 weight 0.5": {
-          "hit@1": 0.4,
-          "hit@4": 0.647,
-          "precision@4": 0.302,
-          "mrr@10": 0.52,
-          "ndcg@10": 0.411,
-          "redundancy@4": 0.45
+          "hit@1": 0.413,
+          "hit@4": 0.667,
+          "precision@4": 0.308,
+          "mrr@10": 0.534,
+          "ndcg@10": 0.418,
+          "redundancy@4": 0.444
         },
         "hybrid RRF, BM25 weight 0.3": {
           "hit@1": 0.4,
-          "hit@4": 0.633,
-          "precision@4": 0.307,
-          "mrr@10": 0.52,
-          "ndcg@10": 0.414,
-          "redundancy@4": 0.457
+          "hit@4": 0.647,
+          "precision@4": 0.31,
+          "mrr@10": 0.524,
+          "ndcg@10": 0.417,
+          "redundancy@4": 0.453
         },
         "hybrid (BM25 0.5) + MMR \u03bb=0.9": {
-          "hit@1": 0.4,
-          "hit@4": 0.64,
-          "precision@4": 0.265,
-          "mrr@10": 0.53,
-          "ndcg@10": 0.385,
-          "redundancy@4": 0.379
+          "hit@1": 0.413,
+          "hit@4": 0.667,
+          "precision@4": 0.263,
+          "mrr@10": 0.533,
+          "ndcg@10": 0.39,
+          "redundancy@4": 0.381
         },
         "hybrid (BM25 0.5) + MMR \u03bb=0.7": {
-          "hit@1": 0.4,
-          "hit@4": 0.647,
-          "precision@4": 0.183,
-          "mrr@10": 0.521,
-          "ndcg@10": 0.311,
-          "redundancy@4": 0.25
+          "hit@1": 0.413,
+          "hit@4": 0.667,
+          "precision@4": 0.195,
+          "mrr@10": 0.535,
+          "ndcg@10": 0.319,
+          "redundancy@4": 0.252
         }
       }
     },
@@ -88,7 +88,7 @@
           "hit@4": 0.615,
           "precision@4": 0.244,
           "mrr@10": 0.475,
-          "ndcg@10": 0.4,
+          "ndcg@10": 0.398,
           "redundancy@4": 0.475
         },
         "hybrid RRF, BM25 weight 0.5": {
@@ -96,7 +96,7 @@
           "hit@4": 0.628,
           "precision@4": 0.247,
           "mrr@10": 0.478,
-          "ndcg@10": 0.403,
+          "ndcg@10": 0.401,
           "redundancy@4": 0.482
         },
         "hybrid RRF, BM25 weight 0.3": {
@@ -105,14 +105,14 @@
           "precision@4": 0.247,
           "mrr@10": 0.473,
           "ndcg@10": 0.403,
-          "redundancy@4": 0.492
+          "redundancy@4": 0.493
         },
         "hybrid (BM25 0.5) + MMR \u03bb=0.9": {
           "hit@1": 0.346,
           "hit@4": 0.603,
           "precision@4": 0.218,
           "mrr@10": 0.476,
-          "ndcg@10": 0.387,
+          "ndcg@10": 0.385,
           "redundancy@4": 0.418
         },
         "hybrid (BM25 0.5) + MMR \u03bb=0.7": {
@@ -120,8 +120,8 @@
           "hit@4": 0.577,
           "precision@4": 0.154,
           "mrr@10": 0.447,
-          "ndcg@10": 0.29,
-          "redundancy@4": 0.245
+          "ndcg@10": 0.289,
+          "redundancy@4": 0.247
         }
       }
     },
@@ -130,60 +130,60 @@
       "chunks": 2585,
       "results": {
         "dense (LSA)": {
-          "hit@1": 0.558,
-          "hit@4": 0.814,
-          "precision@4": 0.477,
-          "mrr@10": 0.675,
-          "ndcg@10": 0.435,
-          "redundancy@4": 0.506
+          "hit@1": 0.535,
+          "hit@4": 0.791,
+          "precision@4": 0.465,
+          "mrr@10": 0.663,
+          "ndcg@10": 0.431,
+          "redundancy@4": 0.505
         },
         "sparse (BM25)": {
           "hit@1": 0.512,
-          "hit@4": 0.884,
-          "precision@4": 0.419,
-          "mrr@10": 0.662,
+          "hit@4": 0.86,
+          "precision@4": 0.413,
+          "mrr@10": 0.66,
           "ndcg@10": 0.385,
-          "redundancy@4": 0.415
+          "redundancy@4": 0.417
         },
         "hybrid RRF, equal weights": {
-          "hit@1": 0.581,
-          "hit@4": 0.907,
-          "precision@4": 0.471,
-          "mrr@10": 0.711,
-          "ndcg@10": 0.425,
-          "redundancy@4": 0.471
+          "hit@1": 0.558,
+          "hit@4": 0.86,
+          "precision@4": 0.459,
+          "mrr@10": 0.691,
+          "ndcg@10": 0.421,
+          "redundancy@4": 0.477
         },
         "hybrid RRF, BM25 weight 0.5": {
-          "hit@1": 0.581,
-          "hit@4": 0.86,
-          "precision@4": 0.465,
-          "mrr@10": 0.694,
+          "hit@1": 0.558,
+          "hit@4": 0.837,
+          "precision@4": 0.459,
+          "mrr@10": 0.679,
           "ndcg@10": 0.424,
-          "redundancy@4": 0.492
+          "redundancy@4": 0.488
         },
         "hybrid RRF, BM25 weight 0.3": {
-          "hit@1": 0.605,
-          "hit@4": 0.837,
-          "precision@4": 0.471,
-          "mrr@10": 0.703,
-          "ndcg@10": 0.429,
-          "redundancy@4": 0.5
+          "hit@1": 0.581,
+          "hit@4": 0.814,
+          "precision@4": 0.459,
+          "mrr@10": 0.689,
+          "ndcg@10": 0.43,
+          "redundancy@4": 0.491
         },
         "hybrid (BM25 0.5) + MMR \u03bb=0.9": {
-          "hit@1": 0.581,
+          "hit@1": 0.558,
           "hit@4": 0.86,
-          "precision@4": 0.442,
-          "mrr@10": 0.698,
-          "ndcg@10": 0.416,
-          "redundancy@4": 0.441
+          "precision@4": 0.43,
+          "mrr@10": 0.684,
+          "ndcg@10": 0.411,
+          "redundancy@4": 0.446
         },
         "hybrid (BM25 0.5) + MMR \u03bb=0.7": {
-          "hit@1": 0.581,
-          "hit@4": 0.86,
-          "precision@4": 0.36,
-          "mrr@10": 0.695,
-          "ndcg@10": 0.359,
-          "redundancy@4": 0.334
+          "hit@1": 0.558,
+          "hit@4": 0.814,
+          "precision@4": 0.355,
+          "mrr@10": 0.674,
+          "ndcg@10": 0.355,
+          "redundancy@4": 0.331
         }
       }
     }
@@ -198,8 +198,8 @@
         "hit@1": 0.288,
         "hit@4": 0.673,
         "precision@4": 0.245,
-        "mrr@10": 0.454,
-        "ndcg@10": 0.294,
+        "mrr@10": 0.453,
+        "ndcg@10": 0.293,
         "redundancy@4": 0.497
       },
       "1000": {
@@ -215,7 +215,7 @@
       },
       "1500": {
         "chunks": 713,
-        "avg_chars": 1244,
+        "avg_chars": 1243,
         "queries": 52,
         "hit@1": 0.346,
         "hit@4": 0.712,
