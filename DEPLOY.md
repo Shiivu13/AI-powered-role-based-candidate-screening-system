@@ -19,7 +19,8 @@ The function uses the NumPy backend (no scikit-learn or ChromaDB) and writes its
 ## Optional settings (Project → Settings → Environment Variables)
 
 - `GEMINI_API_KEY`: switches question generation and grading from offline mode to Gemini.
-- **Persistent sessions:** serverless instances are recycled, so SQLite in `/tmp` only lasts as long as an instance. Add a Postgres database from the Vercel Marketplace (Neon). It sets `POSTGRES_URL`, which the backend picks up automatically.
+- `SESSION_SECRET`: a long random string used to sign the session snapshots the browser keeps. Without it a built-in development key is used.
+- **Shared database (optional):** each serverless instance keeps its own SQLite file in `/tmp`, and the browser's signed snapshots heal any instance that is missing a session, so interviews work without a database. For server-side history across browsers, add a Postgres database from the Vercel Marketplace (Neon); it sets `POSTGRES_URL`, which the backend picks up automatically.
 
 ## Updating the knowledge base
 
