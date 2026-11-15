@@ -2,7 +2,9 @@
 
 A screening interview that writes its own questions. You upload a resume and pick a role. The system reads the resume, decides which topics to probe, pulls the relevant pages out of that role's textbooks, and asks questions grounded in those pages. Every question can be traced back to the resume line that motivated it and the book page it came from.
 
-**Live demo:** https://ai-powered-role-based-candidate-scr-sage.vercel.app (runs in offline mode; no API key is configured on the demo)
+**Live demo:** https://ai-powered-role-based-candidate-scr-sage.vercel.app (Gemini-powered)
+
+Requirement-by-requirement mapping to the assignment brief: [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md). Demo walkthrough: [docs/DEMO.md](docs/DEMO.md).
 
 Built for the AI/ML & Backend intern assignment. Stack: FastAPI, SQLAlchemy, ChromaDB, scikit-learn, React + TypeScript, and Gemini (optional).
 
@@ -21,7 +23,7 @@ make install   # virtualenv, backend + frontend dependencies
 make kb        # optional: re-download the books and rebuild the knowledge base (~1 min)
 make api       # http://localhost:8000   (API docs at /docs)
 make web       # http://localhost:5173
-make test      # 42 backend tests + frontend type-check and build
+make test      # 47 backend tests + frontend type-check and build
 ```
 
 A compact, pre-built knowledge base is committed in `backend/kb/` (14 MB, NumPy only), so a fresh clone works without `make kb`. `make kb` rebuilds the full ChromaDB pipeline from the books and re-exports `backend/kb/`.
@@ -75,14 +77,14 @@ The first version of this benchmark said dense retrieval clearly beat hybrid (hi
 
 | AI/ML Engineer, 150 queries | hit@4 | precision@4 | MRR@10 | redundancy@4 |
 |---|---|---|---|---|
-| dense (LSA) | 0.620 | **0.315** | 0.501 | 0.490 |
-| sparse (BM25) | 0.613 | 0.263 | 0.480 | **0.353** |
-| hybrid, BM25 weight 0.5 | **0.647** | 0.302 | 0.520 | 0.450 |
-| hybrid + MMR λ=0.9 (shipped) | 0.640 | 0.265 | **0.530** | 0.379 |
+| dense (LSA) | 0.640 | **0.325** | 0.510 | 0.480 |
+| sparse (BM25) | 0.627 | 0.265 | 0.474 | **0.349** |
+| hybrid, BM25 weight 0.5 | **0.667** | 0.308 | **0.534** | 0.444 |
+| hybrid + MMR λ=0.9 (shipped) | **0.667** | 0.263 | 0.533 | 0.381 |
 
 No single retriever won on all three knowledge bases: BM25 has the best hit@4 on the Data Science books, dense has the best precision on Bishop. That is the actual argument for hybrid. The benchmark also set three defaults:
 - **BM25 at half weight** inside RRF;
-- **MMR λ=0.9**: it cuts top-4 redundancy by about 16% for about 12% of precision@4, and λ=0.7 costs too much precision;
+- **MMR λ=0.9**: it cuts top-4 redundancy by about 14% for about 15% of precision@4, with hit@4 and MRR unchanged. λ=0.7 costs too much precision;
 - **1000-character chunks**, after an ablation on one fixed query set:
 
 | chunk size | hit@4 | precision@4 | MRR@10 |
@@ -93,15 +95,23 @@ No single retriever won on all three knowledge bases: BM25 has the best hit@4 on
 
 **One-click serverless deployment.** The full pipeline (scikit-learn + ChromaDB) is ~300 MB of dependencies, too heavy for a serverless function. So after ingestion the knowledge base is exported to a compact format in `backend/kb/`: float16 chunk embeddings, chunk texts, and the LSA model as a vocabulary plus a 256×20k projection. At runtime only NumPy is needed: a small re-implementation of the TF-IDF transform (checked against scikit-learn in `tests/test_compact.py`) and brute-force cosine search over a few thousand rows. Shrinking the LSA model from 384 dimensions over 60k terms to 256 over 20k cut it from 179 MB to 10 MB with no measurable loss on the benchmark. `frontend/scripts/vercel-build.sh` uses Vercel's Build Output API to ship the Vite site and the FastAPI app as one deployment (a 147 MB Python function), so the browser calls `/api` on the same origin.
 
-**Self-healing sessions on serverless.** On Vercel every function instance has its own SQLite file in `/tmp`, so an interview's next request can land on an instance that has never seen it. In testing against the live deployment the Sessions page came up empty for exactly this reason. Instead of requiring a database, every API response now carries a signed snapshot of the session (HMAC-SHA256), and the browser keeps the latest one. When an instance answers 404, or holds an older copy (detected from a progress version sent in `X-Session-Version`), the client retries the same request with the snapshot attached. A small ASGI middleware restores it and replays the original request **on that same instance**. A separate "restore, then retry" call does not work, because the two calls can hit different instances; a two-instance round-robin test reproduced that failure. With `POSTGRES_URL` or `DATABASE_URL` set, all of this is simply never triggered.
+**Self-healing sessions on serverless.** On Vercel every function instance has its own SQLite file in `/tmp`, so an interview's next request can land on an instance that has never seen it. In testing against the live deployment the Sessions page came up empty for exactly this reason. Instead of requiring a database, every API response now carries an encrypted snapshot of the session (Fernet: AES + HMAC), and the browser keeps the latest one. Encryption rather than just signing matters for assessment mode, where the candidate must not be able to read their own scores out of the snapshot. When an instance answers 404, or holds an older copy (detected from a progress version sent in `X-Session-Version`), the client retries the same request with the snapshot attached. A small ASGI middleware restores it and replays the original request **on that same instance**. A separate "restore, then retry" call does not work, because the two calls can hit different instances; a two-instance round-robin test reproduced that failure. With `POSTGRES_URL` or `DATABASE_URL` set, all of this is simply never triggered.
 
 **Retrieval Lab** (`/lab` in the UI). Type a query and see what dense, BM25 and hybrid each return side by side, with ranks and scores, plus the benchmark tables. Useful for checking the retrieval layer directly instead of trusting it.
 
 **Answer integrity signals.** Remote screening invites copy-paste. While the candidate answers, the UI records paste volume, keystrokes, active typing time and how often the tab lost focus. It never records what was typed beyond the answer itself. The backend combines this with how much of the answer appears verbatim in the source passages (6-gram overlap), which is the material a cheating candidate would find. The resulting flags are shown with their evidence: pasted answer, copied from the reference text, implausible typing speed, left the tab. They are **advisory and never change the score**: dictating into a notes app looks like pasting, and a reviewer should judge that, not a threshold. (During testing, the headless browser's simulated typing was flagged at ~860 wpm, as it should be.)
 
-**Voice answers.** A mic button uses the browser's speech recognition with live captions, so a candidate can talk through an answer as in a real interview. Dictated text is counted separately, so it does not trigger the typing-speed flag.
-
 **Answer key hidden from the browser.** The API leaves out the expected points while a question is open. They are only returned after the candidate answers or skips.
+
+**Rubric scoring instead of one number.** Every answer is scored on four dimensions: **correctness** (right, and hits the expected points), **depth** (explains *why*), **application** (connects the idea to a concrete situation) and **communication** (structured and precise). The overall score is a fixed weighting (0.4 / 0.25 / 0.2 / 0.15) computed in code from the rubric, so the LLM's headline number can never disagree with its own breakdown. The report averages these into a competency profile, which separates "knows the theory but can't apply it" from "practical but shallow".
+
+**Grounded hints.** A stuck candidate can ask for one hint per question. The hint is generated from that question's expected points without stating them, and costs 15% of that question's score. Hints used are counted in the report.
+
+**Assessment mode vs practice mode.** Practice mode shows the score, rubric, feedback and source passages after every answer, which suits learning and demos. Assessment mode is for real screening: the **server** withholds scores, feedback, answer keys and retrieval traces until the interview is completed. Hiding them only in the UI would not be enough, because the network tab would still show them. The adaptive policy still runs on the hidden scores.
+
+**Voice interview mode.** The interviewer reads each question aloud (browser speech synthesis), then the microphone opens, so a whole interview can be done hands-free. Answers can also be dictated with live captions; dictated text is counted separately so it never triggers the typing-speed flag.
+
+**Compare candidates** (`/compare`). A recruiter view of every completed interview for a role: ranked by overall score, with rubric averages, a per-topic heatmap (each candidate had a personalised plan, so blank cells are expected) and integrity status.
 
 **Works offline, degrades gracefully.** Every LLM call goes through one client that retries on rate limits, and every stage has a deterministic fallback. The trace records which path produced each artefact and why it fell back.
 
@@ -116,6 +126,7 @@ PDFs are messy, and most of the RAG work was cleaning:
 - **The offline follow-up gave the answer away.** The first version quoted the missed reference sentence back to the candidate. It now asks about the missing *concepts* without quoting.
 - **Exercise sections** match many queries but explain nothing, so they get a 25% ranking penalty during fusion.
 - **Sessions vanished between serverless instances**, and the first fix (restore, then retry) failed too, because the two requests hit different instances. See "self-healing sessions" above.
+- **Words broken across lines.** PDF text had "vari- ations" more than 1,300 times. Line-break dehyphenation existed, but ran before whitespace cleanup, so a trailing space defeated it. Fixing the order raised hybrid hit@4 on the AI/ML books from 0.647 to 0.667 and MRR from 0.520 to 0.534. It also fixed how the reference points read in the UI.
 - **The API had no tables on Vercel.** Serverless runtimes never send the ASGI startup event, so the table creation in the lifespan hook never ran. Tables are now created lazily on the first database access.
 
 ## Design decisions, briefly
@@ -142,7 +153,7 @@ backend/app/
   rag/            loaders, chunking, embeddings, vector_store, retriever, ingest, evaluation
 backend/kb/       compact NumPy-only knowledge base (committed; used on Vercel and by fresh clones)
 backend/scripts/  download_kb, ingest_kb, export_kb, benchmark_retrieval
-backend/tests/    42 tests: synthetic mini-textbook + fake LLM, no network or books needed
+backend/tests/    47 tests: synthetic mini-textbook + fake LLM, no network or books needed
 frontend/scripts/vercel-build.sh   Build Output API bundle: static site + Python function
 frontend/src/     pages (Setup, Session, History, Lab), components, state (interview reducer,
                   telemetry, speech)
@@ -153,9 +164,10 @@ docs/benchmarks/  retrieval benchmark output
 
 | | |
 |---|---|
-| `POST /api/sessions` | multipart: `role_id`, `resume` file or `resume_text`, optional `candidate_name`, `num_questions` |
+| `POST /api/sessions` | multipart: `role_id`, `resume` file or `resume_text`, optional `candidate_name`, `num_questions`, `mode` (`practice`/`assessment`) |
 | `POST /api/sessions/{id}/questions/next` | next question; returns the open one again if there is one (safe to retry) |
 | `POST /api/sessions/{id}/questions/{qid}/answer` | `{text, telemetry?}`; returns the evaluation and integrity signals |
+| `POST /api/sessions/{id}/questions/{qid}/hint` | one grounded hint (costs 15% of that question's score) |
 | `POST /api/sessions/{id}/questions/{qid}/skip` | skip a question |
 | `POST /api/sessions/{id}/complete` | close the interview and build the report |
 | `GET /api/sessions`, `GET/DELETE /api/sessions/{id}`, `GET /api/sessions/{id}/report` | history, details, report |
