@@ -1,20 +1,35 @@
-# Deployment
+# Deployment (Vercel)
 
-Backend on Render, frontend on Vercel. Both have free tiers that are enough for a demo.
+The repo deploys to Vercel as a single project: the React site and the FastAPI backend ship together, and the browser calls `/api` on the same domain.
 
-## Backend (Render)
+**No settings or environment variables are required.** `vercel.json` overrides the framework preset and the build command, and it works whether the project's Root Directory is the repo root or `frontend`.
 
-1. New → Blueprint → select this repo. `render.yaml` defines the service.
-2. Optionally set `GEMINI_API_KEY` in the service's environment. Without it the API runs in offline mode.
-3. The build downloads the books and builds the vector store, which takes a few minutes the first time.
-   Check `https://<service>.onrender.com/api/health`: every role should show a non-zero chunk count.
+## How it works
 
-The SQLite database lives on the instance's disk, so sessions reset on redeploy. Set `DATABASE_URL` to a hosted Postgres if they need to persist.
+`frontend/scripts/vercel-build.sh` writes a [Build Output API](https://vercel.com/docs/build-output-api/v3) bundle:
 
-## Frontend (Vercel)
+| Output | Contents |
+|---|---|
+| `static/` | the Vite build |
+| `functions/api/index.func` | Python 3.12 function: `backend/app`, the compact knowledge base `backend/kb`, and the dependencies from `backend/requirements-vercel.txt` (147 MB, within Vercel's 250 MB limit) |
+| `config.json` | routes `/api/*` to the function, and everything else to `index.html` (client-side routing) |
 
-1. Import the repo and set **Root Directory** to `frontend`. Vercel detects Vite.
-2. Add the environment variable `VITE_API_URL` = the Render URL (no trailing slash).
-3. Deploy. `vercel.json` rewrites every path to `index.html` so client-side routes such as `/sessions/...` survive a reload.
+The function uses the NumPy backend (no scikit-learn or ChromaDB) and writes its SQLite database to `/tmp`.
 
-The backend accepts any `*.vercel.app` origin through `CORS_ORIGIN_REGEX`. Tighten it to your exact domain if you like.
+## Optional settings (Project → Settings → Environment Variables)
+
+- `GEMINI_API_KEY`: switches question generation and grading from offline mode to Gemini.
+- **Persistent sessions:** serverless instances are recycled, so SQLite in `/tmp` only lasts as long as an instance. Add a Postgres database from the Vercel Marketplace (Neon). It sets `POSTGRES_URL`, which the backend picks up automatically.
+
+## Updating the knowledge base
+
+```bash
+make kb    # download books -> ingest into ChromaDB -> export backend/kb
+git add backend/kb && git commit -m "Rebuild knowledge base" && git push
+```
+
+## Local check of the deployment build
+
+```bash
+npx vercel build      # produces .vercel/output exactly as the cloud build does
+```

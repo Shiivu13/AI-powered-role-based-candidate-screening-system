@@ -16,13 +16,15 @@ You need Python 3.11+ and Node 18+.
 
 ```bash
 make install   # virtualenv, backend + frontend dependencies
-make kb        # download the books, build the vector store (~1 min, CPU only)
+make kb        # optional: re-download the books and rebuild the knowledge base (~1 min)
 make api       # http://localhost:8000   (API docs at /docs)
 make web       # http://localhost:5173
-make test      # 37 backend tests + frontend type-check and build
+make test      # 39 backend tests + frontend type-check and build
 ```
 
-Deployment (Render + Vercel) is described in [DEPLOY.md](DEPLOY.md).
+A compact, pre-built knowledge base is committed in `backend/kb/` (14 MB, NumPy only), so a fresh clone works without `make kb`. `make kb` rebuilds the full ChromaDB pipeline from the books and re-exports `backend/kb/`.
+
+**Deploying:** push to a Vercel project and it builds the frontend and the API together, with no settings or environment variables needed. See [DEPLOY.md](DEPLOY.md).
 
 The system works with no API key at all. To get fluent LLM-written questions and grading, put a Gemini key in `backend/.env`; the free tier is enough:
 
@@ -71,14 +73,14 @@ The first version of this benchmark said dense retrieval clearly beat hybrid (hi
 
 | AI/ML Engineer, 150 queries | hit@4 | precision@4 | MRR@10 | redundancy@4 |
 |---|---|---|---|---|
-| dense (LSA) | 0.627 | **0.313** | 0.500 | 0.381 |
-| sparse (BM25) | 0.613 | 0.263 | 0.480 | **0.296** |
-| hybrid, BM25 weight 0.5 | 0.647 | 0.303 | 0.512 | 0.357 |
-| hybrid + MMR λ=0.9 (shipped) | **0.660** | 0.260 | **0.519** | 0.294 |
+| dense (LSA) | 0.620 | **0.315** | 0.501 | 0.490 |
+| sparse (BM25) | 0.613 | 0.263 | 0.480 | **0.353** |
+| hybrid, BM25 weight 0.5 | **0.647** | 0.302 | 0.520 | 0.450 |
+| hybrid + MMR λ=0.9 (shipped) | 0.640 | 0.265 | **0.530** | 0.379 |
 
 No single retriever won on all three knowledge bases: BM25 has the best hit@4 on the Data Science books, dense has the best precision on Bishop. That is the actual argument for hybrid. The benchmark also set three defaults:
 - **BM25 at half weight** inside RRF;
-- **MMR λ=0.9**: it cuts top-4 redundancy by about 18% for a similar precision cost, and λ=0.7 costs too much precision;
+- **MMR λ=0.9**: it cuts top-4 redundancy by about 16% for about 12% of precision@4, and λ=0.7 costs too much precision;
 - **1000-character chunks**, after an ablation on one fixed query set:
 
 | chunk size | hit@4 | precision@4 | MRR@10 |
@@ -86,6 +88,8 @@ No single retriever won on all three knowledge bases: BM25 has the best hit@4 on
 | 500 | 0.673 | 0.245 | 0.454 |
 | **1000** | **0.712** | **0.303** | **0.571** |
 | 1500 | 0.712 | 0.264 | 0.523 |
+
+**One-click serverless deployment.** The full pipeline (scikit-learn + ChromaDB) is ~300 MB of dependencies, too heavy for a serverless function. So after ingestion the knowledge base is exported to a compact format in `backend/kb/`: float16 chunk embeddings, chunk texts, and the LSA model as a vocabulary plus a 256×20k projection. At runtime only NumPy is needed: a small re-implementation of the TF-IDF transform (checked against scikit-learn in `tests/test_compact.py`) and brute-force cosine search over a few thousand rows. Shrinking the LSA model from 384 dimensions over 60k terms to 256 over 20k cut it from 179 MB to 10 MB with no measurable loss on the benchmark. `frontend/scripts/vercel-build.sh` uses Vercel's Build Output API to ship the Vite site and the FastAPI app as one deployment (a 147 MB Python function), so the browser calls `/api` on the same origin.
 
 **Retrieval Lab** (`/lab` in the UI). Type a query and see what dense, BM25 and hybrid each return side by side, with ranks and scores, plus the benchmark tables. Useful for checking the retrieval layer directly instead of trusting it.
 
@@ -107,6 +111,7 @@ PDFs are messy, and most of the RAG work was cleaning:
 - **"EDUCATION" counted as a domain.** Every resume has that section header, so every candidate looked like they worked in EdTech.
 - **The offline follow-up gave the answer away.** The first version quoted the missed reference sentence back to the candidate. It now asks about the missing *concepts* without quoting.
 - **Exercise sections** match many queries but explain nothing, so they get a 25% ranking penalty during fusion.
+- **The API had no tables on Vercel.** Serverless runtimes never send the ASGI startup event, so the table creation in the lifespan hook never ran. Tables are now created lazily on the first database access.
 
 ## Design decisions, briefly
 
@@ -130,8 +135,10 @@ backend/app/
   ai/             catalog (roles/books/topics), resume_parser, planner, question_generator,
                   answer_evaluator, integrity, report_generator, llm, prompts
   rag/            loaders, chunking, embeddings, vector_store, retriever, ingest, evaluation
-backend/scripts/  download_kb, ingest_kb, benchmark_retrieval
-backend/tests/    37 tests: synthetic mini-textbook + fake LLM, no network or books needed
+backend/kb/       compact NumPy-only knowledge base (committed; used on Vercel and by fresh clones)
+backend/scripts/  download_kb, ingest_kb, export_kb, benchmark_retrieval
+backend/tests/    39 tests: synthetic mini-textbook + fake LLM, no network or books needed
+frontend/scripts/vercel-build.sh   Build Output API bundle: static site + Python function
 frontend/src/     pages (Setup, Session, History, Lab), components, state (interview reducer,
                   telemetry, speech)
 docs/benchmarks/  retrieval benchmark output
