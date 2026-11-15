@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: screenrag-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    # The knowledge base is built at deploy time: books are downloaded and
+    # embedded with the local LSA model, so no model download or API key is needed.
+    buildCommand: pip install -r requirements.txt && python -m scripts.download_kb; python -m scripts.ingest_kb
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: GEMINI_API_KEY
+        sync: false   # optional; set in the Render dashboard
+      - key: CORS_ORIGIN_REGEX
+        value: https://.*\.vercel\.app

@@ -22,6 +22,8 @@ make web       # http://localhost:5173
 make test      # 37 backend tests + frontend type-check and build
 ```
 
+Deployment (Render + Vercel) is described in [DEPLOY.md](DEPLOY.md).
+
 The system works with no API key at all. To get fluent LLM-written questions and grading, put a Gemini key in `backend/.env`; the free tier is enough:
 
 ```bash
@@ -133,7 +135,6 @@ backend/tests/    37 tests: synthetic mini-textbook + fake LLM, no network or bo
 frontend/src/     pages (Setup, Session, History, Lab), components, state (interview reducer,
                   telemetry, speech)
 docs/benchmarks/  retrieval benchmark output
-legacy/           the earlier Streamlit prompt-evaluation prototype from this repo
 ```
 
 ## API

@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"]
     )
+    # Optional regex for deployed frontends, e.g. r"https://.*\.vercel\.app"
+    cors_origin_regex: str | None = None
 
     # --- Storage -----------------------------------------------------------
     data_dir: Path = BACKEND_DIR / "data"
