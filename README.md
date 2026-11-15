@@ -2,6 +2,8 @@
 
 A screening interview that writes its own questions. You upload a resume and pick a role. The system reads the resume, decides which topics to probe, pulls the relevant pages out of that role's textbooks, and asks questions grounded in those pages. Every question can be traced back to the resume line that motivated it and the book page it came from.
 
+**Live demo:** https://ai-powered-role-based-candidate-scr-sage.vercel.app (runs in offline mode; no API key is configured on the demo)
+
 Built for the AI/ML & Backend intern assignment. Stack: FastAPI, SQLAlchemy, ChromaDB, scikit-learn, React + TypeScript, and Gemini (optional).
 
 ```
