@@ -22,6 +22,8 @@ The function uses the NumPy backend (no scikit-learn or ChromaDB) and writes its
 - `SESSION_SECRET`: a long random string used to sign the session snapshots the browser keeps. Without it a built-in development key is used.
 - **Shared database (optional):** each serverless instance keeps its own SQLite file in `/tmp`, and the browser's signed snapshots heal any instance that is missing a session, so interviews work without a database. For server-side history across browsers, add a Postgres database from the Vercel Marketplace (Neon); it sets `POSTGRES_URL`, which the backend picks up automatically.
 
+Environment variables only reach new deployments. After adding or changing one, redeploy (Deployments → ⋯ → Redeploy) or push any commit.
+
 ## Updating the knowledge base
 
 ```bash
