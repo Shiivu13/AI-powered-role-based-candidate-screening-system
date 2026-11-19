@@ -183,7 +183,7 @@ backend/app/
   rag/            loaders, chunking, embeddings, vector_store, retriever, ingest, evaluation
 backend/kb/       compact NumPy-only knowledge base (committed; used on Vercel and by fresh clones)
 backend/scripts/  download_kb, ingest_kb, export_kb, benchmark_retrieval
-backend/tests/    51 tests: synthetic mini-textbook + fake LLM, no network or books needed
+backend/tests/    56 tests: synthetic mini-textbook + fake LLM, no network or books needed
 frontend/scripts/vercel-build.sh   Build Output API bundle: static site + Python function
 frontend/src/     pages (Setup, Session, History, Lab), components, state (interview reducer,
                   telemetry, speech)

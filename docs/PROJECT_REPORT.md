@@ -61,7 +61,7 @@ A compare page ranks every completed interview for a role, with rubric averages 
 
 ## Testing
 
-There are 51 backend tests. They build a small synthetic textbook and replace Gemini with a deterministic fake, so they need no network, books or API key. They cover chunking, cleaning, retrieval, planning, grading, the full interview lifecycle, assessment mode, hints, snapshot restore, custom roles and the compact knowledge base. I also ran the complete interview in a browser with Playwright, locally and against the live site, after each major change.
+There are 56 backend tests. They build a small synthetic textbook and replace Gemini with a deterministic fake, so they need no network, books or API key. They cover chunking, cleaning, retrieval, planning, grading, the full interview lifecycle, assessment mode, hints, snapshot restore, custom roles and the compact knowledge base. I also ran the complete interview in a browser with Playwright, locally and against the live site, after each major change.
 
 ## Limits and next steps
 

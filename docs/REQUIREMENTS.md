@@ -1,6 +1,6 @@
 # Requirements coverage
 
-Every requirement in the assignment brief, where it is implemented, and how it is verified. "Tests" refers to `backend/tests/` (51 tests, `make test`).
+Every requirement in the assignment brief, where it is implemented, and how it is verified. "Tests" refers to `backend/tests/` (56 tests, `make test`).
 
 ## 3. Expected system flow
 
