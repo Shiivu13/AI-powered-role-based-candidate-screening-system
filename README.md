@@ -23,7 +23,7 @@ make install   # virtualenv, backend + frontend dependencies
 make kb        # optional: re-download the books and rebuild the knowledge base (~1 min)
 make api       # http://localhost:8000   (API docs at /docs)
 make web       # http://localhost:5173
-make test      # 51 backend tests + frontend type-check and build
+make test      # 56 backend tests + frontend type-check and build
 ```
 
 A compact, pre-built knowledge base is committed in `backend/kb/` (14 MB, NumPy only), so a fresh clone works without `make kb`. `make kb` rebuilds the full ChromaDB pipeline from the books and re-exports `backend/kb/`.

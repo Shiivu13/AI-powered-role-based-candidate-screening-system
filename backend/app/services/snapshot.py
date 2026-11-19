@@ -107,8 +107,12 @@ def export_snapshot(session: InterviewSession) -> dict:
 
 
 def restore_snapshot(db: Session, snapshot: dict) -> InterviewSession:
+    if not isinstance(snapshot, dict):
+        raise ValidationFailed("Session snapshot is invalid or was tampered with")
     try:
         data = json.loads(_fernet().decrypt(str(snapshot.get("body", "")).encode()))
+        if not isinstance(data, dict) or not isinstance(data.get("session"), dict):
+            raise ValueError("unexpected snapshot shape")
     except (InvalidToken, ValueError) as exc:
         raise ValidationFailed("Session snapshot is invalid or was tampered with") from exc
 

@@ -235,6 +235,23 @@ def test_restore_and_replay_in_one_request(client, offline_llm, resume_text):
     assert bad.status_code == 422
 
 
+@pytest.mark.parametrize("envelope", [
+    "[1, 2]",
+    '{"snapshot": "not-a-dict"}',
+    '{"snapshot": {}, "body": "!!! not base64"}',
+    '{"snapshot": {}, "body": 123}',
+    "not json",
+])
+def test_malformed_restore_envelopes_get_422_not_500(client, envelope):
+    response = client.post(
+        "/api/sessions/some-id",
+        headers={"X-Session-Restore": "1", "X-Original-Method": "GET", "content-type": "application/json"},
+        content=envelope,
+    )
+    assert response.status_code == 422, response.text
+    assert response.json()["error"]["code"] == "validation_failed"
+
+
 def test_assessment_mode_hides_results_until_completion(client, offline_llm, resume_text):
     sid = _create(client, resume_text, mode="assessment").json()["id"]
     q = client.post(f"/api/sessions/{sid}/questions/next").json()["question"]
